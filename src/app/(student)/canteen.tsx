@@ -819,7 +819,7 @@ const styles = StyleSheet.create({
   contentContainer: {
     paddingHorizontal: 20,
     paddingTop: 54,
-    paddingBottom: 180,
+    paddingBottom: 210,
     maxWidth: 600,
     alignSelf: 'center',
     width: '100%',
@@ -1002,7 +1002,7 @@ const styles = StyleSheet.create({
   },
   floatingCartContainer: {
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 104 : 86,
+    bottom: Platform.OS === 'ios' ? 128 : 110,
     left: 16,
     right: 16,
     alignItems: 'center',
