@@ -192,17 +192,33 @@ export default function CanteenScreen() {
       >
         {/* HEADER */}
         <View style={styles.headerRow}>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={[styles.brandSubtitle, { color: colors.primary }]}>CAMPUS CONNECT CANTEEN</Text>
             <Text style={[styles.screenHeading, { color: colors.text }]}>Today’s menu</Text>
           </View>
-          <Pressable
-            style={[styles.historyBtn, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
-            onPress={() => setShowHistoryModal(true)}
-          >
-            <Ionicons name="receipt-outline" size={16} color={colors.primary} />
-            <Text style={[styles.historyBtnText, { color: colors.primary }]}>Orders</Text>
-          </Pressable>
+          <View style={styles.headerRightActions}>
+            {cartTotalItems > 0 && (
+              <Pressable
+                style={styles.headerCartBtn}
+                onPress={() => setCartModalVisible(true)}
+              >
+                <Ionicons name="cart" size={15} color="#0D1411" />
+                <Text style={styles.headerCartBtnText}>
+                  {cartTotalItems} · ₹{cartSubtotal}
+                </Text>
+              </Pressable>
+            )}
+            <Pressable
+              style={[
+                styles.historyBtn,
+                { backgroundColor: colors.card, borderColor: colors.cardBorder },
+              ]}
+              onPress={() => setShowHistoryModal(true)}
+            >
+              <Ionicons name="receipt-outline" size={16} color={colors.primary} />
+              <Text style={[styles.historyBtnText, { color: colors.primary }]}>Orders</Text>
+            </Pressable>
+          </View>
         </View>
 
         <Text style={[styles.screenSub, { color: colors.textMuted }]}>
@@ -803,7 +819,7 @@ const styles = StyleSheet.create({
   contentContainer: {
     paddingHorizontal: 20,
     paddingTop: 54,
-    paddingBottom: 120,
+    paddingBottom: 180,
     maxWidth: 600,
     alignSelf: 'center',
     width: '100%',
@@ -811,8 +827,28 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     marginBottom: 4,
+  },
+  headerRightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  headerCartBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: CampusTheme.colors.primary,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    borderRadius: 10,
+    ...CampusTheme.shadows.glow,
+  },
+  headerCartBtnText: {
+    color: '#0D1411',
+    fontSize: 12,
+    fontWeight: '800',
   },
   historyBtn: {
     flexDirection: 'row',
@@ -966,10 +1002,11 @@ const styles = StyleSheet.create({
   },
   floatingCartContainer: {
     position: 'absolute',
-    bottom: 24,
-    left: 20,
-    right: 20,
+    bottom: Platform.OS === 'ios' ? 104 : 86,
+    left: 16,
+    right: 16,
     alignItems: 'center',
+    zIndex: 9999,
   },
   floatingCartBar: {
     width: '100%',
