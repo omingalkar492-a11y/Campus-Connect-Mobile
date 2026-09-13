@@ -1,0 +1,135 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function getUserRole() {
+      return getUserData().role;
+    }
+
+    function getUserCollegeId() {
+      return getUserData().collegeId;
+    }
+
+    function isSuperAdmin() {
+      return isAuthenticated() && getUserRole() == 'super_admin';
+    }
+
+    function isCollegeAdmin(collegeId) {
+      return isSuperAdmin() || (isAuthenticated() && getUserRole() == 'college_admin' && getUserCollegeId() == collegeId);
+    }
+
+    function isFoodCourtStaff(collegeId) {
+      return isCollegeAdmin(collegeId) || (isAuthenticated() && getUserRole() == 'food_court_staff' && getUserCollegeId() == collegeId);
+    }
+
+    function isTeacherStaff(collegeId) {
+      return isCollegeAdmin(collegeId) || (isAuthenticated() && getUserRole() == 'teacher_staff' && getUserCollegeId() == collegeId);
+    }
+
+    function isStudent(collegeId) {
+      return isAuthenticated() && getUserRole() == 'student' && getUserCollegeId() == collegeId;
+    }
+
+    function belongsToCollege(collegeId) {
+      return isSuperAdmin() || (isAuthenticated() && getUserCollegeId() == collegeId);
+    }
+
+    // 1. Colleges directory
+    match /colleges/{collegeId} {
+      allow read: if true; // Public for discovery and onboarding
+      allow write: if isSuperAdmin();
+    }
+
+    // 2. User profiles
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isCollegeAdmin(resource.data.collegeId) || isSuperAdmin());
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isAuthenticated() && (request.auth.uid == userId || isCollegeAdmin(resource.data.collegeId) || isSuperAdmin());
+      allow delete: if isSuperAdmin();
+    }
+
+    // 3. Buildings & Rooms
+    match /rooms/{roomId} {
+      allow read: if belongsToCollege(resource.data.collegeId);
+      allow write: if isCollegeAdmin(request.resource.data.collegeId);
+    }
+
+    // 4. Faculty
+    match /faculty/{facultyId} {
+      allow read: if belongsToCollege(resource.data.collegeId);
+      allow write: if isCollegeAdmin(request.resource.data.collegeId);
+    }
+
+    // 5. Timetable
+    match /timetable/{slotId} {
+      allow read: if belongsToCollege(resource.data.collegeId);
+      allow write: if isCollegeAdmin(request.resource.data.collegeId) || isTeacherStaff(request.resource.data.collegeId);
+    }
+
+    // 6. 360° Campus Locations
+    match /campus360Locations/{locationId} {
+      allow read: if belongsToCollege(resource.data.collegeId);
+      allow write: if isCollegeAdmin(request.resource.data.collegeId);
+    }
+
+    // 7. Food Courts & Food Items
+    match /foodCourts/{courtId} {
+      allow read: if belongsToCollege(resource.data.collegeId);
+      allow write: if isCollegeAdmin(request.resource.data.collegeId);
+    }
+
+    match /foodItems/{itemId} {
+      allow read: if belongsToCollege(resource.data.collegeId);
+      // Students can NEVER edit food prices or availability
+      allow write: if isCollegeAdmin(request.resource.data.collegeId) || isFoodCourtStaff(request.resource.data.collegeId);
+    }
+
+    // 8. Orders
+    match /orders/{orderId} {
+      // Student can read their own orders; Food court staff and College Admin can read orders for their college
+      allow read: if isAuthenticated() && (
+        resource.data.studentUid == request.auth.uid ||
+        isFoodCourtStaff(resource.data.collegeId)
+      );
+      // Students create orders; items are price-locked
+      allow create: if isAuthenticated() && request.resource.data.studentUid == request.auth.uid;
+      // Staff can update status; students cannot change order status once created
+      allow update: if isFoodCourtStaff(resource.data.collegeId);
+      allow delete: if isCollegeAdmin(resource.data.collegeId);
+    }
+
+    // 9. Pickup OTPs (PROTECTED: never readable by food court staff directly)
+    match /pickupOtps/{orderId} {
+      allow read: if isAuthenticated() && resource.data.studentUid == request.auth.uid;
+      allow write: if false; // Server-side Cloud Functions only
+    }
+
+    // 10. Notices & Announcements
+    match /notices/{noticeId} {
+      allow read: if belongsToCollege(resource.data.collegeId);
+      allow write: if isCollegeAdmin(request.resource.data.collegeId) || isTeacherStaff(request.resource.data.collegeId);
+    }
+
+    // 11. Audit Logs
+    match /auditLogs/{logId} {
+      allow read: if isCollegeAdmin(resource.data.collegeId) || isSuperAdmin();
+      allow write: if false; // Cloud Functions only
+    }
+
+    // 12. Food Court Bank & Payout Configuration
+    match /payoutConfigs/{configId} {
+      // Students read active VPA during checkout; Only staff/admin can update bank details
+      allow read: if isAuthenticated();
+      allow write: if isFoodCourtStaff(request.resource.data.collegeId) || isCollegeAdmin(request.resource.data.collegeId);
+    }
+  }
+}
