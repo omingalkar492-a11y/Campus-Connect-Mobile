@@ -57,6 +57,7 @@ const USERS_STORAGE_KEY = 'cc_registered_users';
 const FOOD_ITEMS_STORAGE_KEY = 'cc_food_items';
 const LOCATIONS_360_STORAGE_KEY = 'cc_360_locations';
 const PAYOUT_CONFIGS_STORAGE_KEY = 'cc_payout_configs';
+const ORDERS_STORAGE_KEY = 'cc_orders';
 
 const saveToStorage = async (key: string, data: any) => {
   try {
@@ -112,6 +113,17 @@ const saveToStorage = async (key: string, data: any) => {
       if (parsedPayout && typeof parsedPayout === 'object') {
         runtimePayoutConfigs = { ...runtimePayoutConfigs, ...parsedPayout };
       }
+    }
+
+    const ordersRaw = await readStorage(ORDERS_STORAGE_KEY);
+    if (ordersRaw) {
+      const parsedOrders = JSON.parse(ordersRaw);
+      if (Array.isArray(parsedOrders) && parsedOrders.length > 0) {
+        runtimeOrders = parsedOrders;
+      }
+    } else {
+      // Save initial seed order
+      await saveToStorage(ORDERS_STORAGE_KEY, runtimeOrders);
     }
   } catch (e) {
     console.warn('Storage init warning:', e);
@@ -409,6 +421,27 @@ export const DataService = {
 
   // 8. Orders & Live Status
   async getOrders(collegeId: string, studentUid?: string): Promise<Order[]> {
+    // Dynamic storage sync to immediately pull orders/updates from other tabs/windows
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const stored = window.localStorage.getItem(ORDERS_STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            runtimeOrders = parsed;
+          }
+        }
+      } else if (Platform.OS !== 'web') {
+        const stored = await AsyncStorage.getItem(ORDERS_STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            runtimeOrders = parsed;
+          }
+        }
+      }
+    } catch {}
+
     let list = runtimeOrders.filter((o) => o.collegeId === collegeId);
     if (studentUid) {
       list = list.filter((o) => o.studentUid === studentUid);
@@ -423,7 +456,7 @@ export const DataService = {
     return runtimeOrders.find((o) => o.id === orderId) || null;
   },
 
-  // 9. Server-Validated Order Creation
+  // 9. Server-Validated Order Creation (Instant & Non-Blocking)
   async createOrder(params: {
     collegeId: string;
     foodCourtId: string;
@@ -455,8 +488,8 @@ export const DataService = {
     const tax = 0; // Tax policy
     const total = subtotal + tax;
 
-    // 2. Generate secure 6-digit pickup OTP
-    const pickupOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    // 2. Generate clean 4-digit random pickup code (e.g. 4827)
+    const pickupOtp = Math.floor(1000 + Math.random() * 9000).toString();
     const orderNumber = `#CC${Math.floor(1000 + Math.random() * 9000)}`;
     const now = new Date().toISOString();
 
@@ -475,7 +508,7 @@ export const DataService = {
       paymentMethod: params.paymentMethod,
       paymentStatus: params.paymentMethod === 'UPI' ? 'paid' : 'cash_pending',
       orderStatus: 'placed',
-      pickupOtp, // Accessible to student upon readiness
+      pickupOtp, // 4-digit pickup code
       createdAt: now,
       updatedAt: now,
       statusHistory: [
@@ -488,10 +521,10 @@ export const DataService = {
     };
 
     runtimeOrders.unshift(newOrder);
+    await saveToStorage(ORDERS_STORAGE_KEY, runtimeOrders);
 
-    try {
-      await setDoc(doc(db, 'orders', newOrder.id), newOrder);
-    } catch {}
+    // Non-blocking Firestore write with timeout so UI never hangs
+    withTimeout(setDoc(doc(db, 'orders', newOrder.id), newOrder), 1500).catch(() => {});
 
     return newOrder;
   },
@@ -525,19 +558,21 @@ export const DataService = {
     };
 
     runtimeOrders[orderIndex] = updatedOrder;
+    await saveToStorage(ORDERS_STORAGE_KEY, runtimeOrders);
 
-    try {
-      await updateDoc(doc(db, 'orders', orderId), {
+    withTimeout(
+      updateDoc(doc(db, 'orders', orderId), {
         orderStatus: nextStatus,
         updatedAt: now,
         statusHistory: updatedOrder.statusHistory,
-      });
-    } catch {}
+      }),
+      1500
+    ).catch(() => {});
 
     return updatedOrder;
   },
 
-  // 11. Secure Pickup OTP Verification with Anti-Brute-Force Rate Limiting
+  // 11. 4-Digit Pickup OTP Verification (Mainly for Online UPI Paid Orders)
   async verifyPickupOtp(
     orderId: string,
     enteredOtp: string,
@@ -568,7 +603,7 @@ export const DataService = {
       const remaining = 5 - otpAttempts[orderId];
       return {
         success: false,
-        message: `Invalid OTP code. ${remaining} attempt(s) remaining.`,
+        message: `Invalid 4-digit code. ${remaining} attempt(s) remaining.`,
       };
     }
 
@@ -587,25 +622,27 @@ export const DataService = {
         {
           status: 'completed',
           timestamp: now,
-          note: `Pickup verified with OTP by ${staffName}`,
+          note: `Pickup verified with 4-digit OTP by ${staffName}`,
         },
       ],
     };
 
     runtimeOrders[orderIndex] = completedOrder;
+    await saveToStorage(ORDERS_STORAGE_KEY, runtimeOrders);
 
-    try {
-      await updateDoc(doc(db, 'orders', orderId), {
+    withTimeout(
+      updateDoc(doc(db, 'orders', orderId), {
         orderStatus: 'completed',
         paymentStatus: completedOrder.paymentStatus,
         pickupVerifiedAt: now,
         updatedAt: now,
-      });
-    } catch {}
+      }),
+      1500
+    ).catch(() => {});
 
     return {
       success: true,
-      message: 'Pickup OTP verified successfully! Order completed.',
+      message: '4-digit code verified! Order completed & picked up.',
       order: completedOrder,
     };
   },
@@ -633,6 +670,97 @@ export const DataService = {
     };
 
     runtimeOrders[orderIndex] = updatedOrder;
+    await saveToStorage(ORDERS_STORAGE_KEY, runtimeOrders);
+
+    withTimeout(
+      updateDoc(doc(db, 'orders', orderId), {
+        paymentStatus: 'cash_received',
+        updatedAt: now,
+      }),
+      1500
+    ).catch(() => {});
+
+    return updatedOrder;
+  },
+
+  // 12b. 1-Click Counter Cash Pickup (OTP not mandatory for cash orders)
+  async completeCashOrderWithoutOtp(
+    orderId: string,
+    staffName: string = 'Food Court Counter'
+  ): Promise<Order> {
+    const orderIndex = runtimeOrders.findIndex((o) => o.id === orderId);
+    if (orderIndex === -1) throw new Error('Order not found');
+
+    const order = runtimeOrders[orderIndex];
+    const now = new Date().toISOString();
+
+    const completedOrder: Order = {
+      ...order,
+      orderStatus: 'completed',
+      paymentStatus: 'cash_received',
+      pickupVerifiedAt: now,
+      updatedAt: now,
+      statusHistory: [
+        ...(order.statusHistory || []),
+        {
+          status: 'completed',
+          timestamp: now,
+          note: `Cash ₹${order.total} received & food handed over at counter by ${staffName} (No OTP needed for cash)`,
+        },
+      ],
+    };
+
+    runtimeOrders[orderIndex] = completedOrder;
+    await saveToStorage(ORDERS_STORAGE_KEY, runtimeOrders);
+
+    withTimeout(
+      updateDoc(doc(db, 'orders', orderId), {
+        orderStatus: 'completed',
+        paymentStatus: 'cash_received',
+        pickupVerifiedAt: now,
+        updatedAt: now,
+      }),
+      1500
+    ).catch(() => {});
+
+    return completedOrder;
+  },
+
+  // 12c. Student switches active cash order to Online UPI Payment at any time
+  async switchOrderPaymentToUpi(orderId: string, upiRef: string): Promise<Order> {
+    const orderIndex = runtimeOrders.findIndex((o) => o.id === orderId);
+    if (orderIndex === -1) throw new Error('Order not found');
+
+    const order = runtimeOrders[orderIndex];
+    const now = new Date().toISOString();
+
+    const updatedOrder: Order = {
+      ...order,
+      paymentMethod: 'UPI',
+      paymentStatus: 'paid',
+      updatedAt: now,
+      statusHistory: [
+        ...(order.statusHistory || []),
+        {
+          status: order.orderStatus,
+          timestamp: now,
+          note: `Switched to Online UPI Payment (Ref: ${upiRef})`,
+        },
+      ],
+    };
+
+    runtimeOrders[orderIndex] = updatedOrder;
+    await saveToStorage(ORDERS_STORAGE_KEY, runtimeOrders);
+
+    withTimeout(
+      updateDoc(doc(db, 'orders', orderId), {
+        paymentMethod: 'UPI',
+        paymentStatus: 'paid',
+        updatedAt: now,
+      }),
+      1500
+    ).catch(() => {});
+
     return updatedOrder;
   },
 

@@ -117,6 +117,13 @@ export const CampusTheme = {
       shadowRadius: 16,
       elevation: 8,
     },
+    button: {
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.12,
+      shadowRadius: 6,
+      elevation: 3,
+    },
   },
 };
 

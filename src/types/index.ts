@@ -11,6 +11,8 @@ export type StaffPermission =
   | 'notices_publisher'
   | 'rooms_manager';
 
+export type UserStatus = 'active' | 'pending' | 'suspended';
+
 export interface UserProfile {
   uid: string;
   role: UserRole;
@@ -152,7 +154,8 @@ export interface FoodCourtPayoutConfig {
   upiVpa: string;
   gatewayVendorId?: string; // Razorpay Route / Cashfree Vendor ID
   gatewayProvider: 'UPI_DIRECT' | 'RAZORPAY_ROUTE' | 'CASHFREE_SPLIT' | 'PHONEPE_PG';
-  settlementSchedule: 'instant' | 'daily_t1';
+  settlementSchedule: 'instant' | 'daily_t1' | 't_plus_1' | 't_plus_2';
+  merchantAccountId?: string;
   verified: boolean;
   updatedAt: string;
 }
@@ -265,18 +268,3 @@ export interface PaymentRecord {
   verifiedAt?: string;
 }
 
-export interface FoodCourtPayoutConfig {
-  foodCourtId: string;
-  collegeId: string;
-  businessName: string;
-  accountHolderName: string;
-  bankName: string;
-  accountNumber: string;
-  ifscCode: string;
-  upiVpa: string;
-  gatewayProvider: 'UPI_DIRECT' | 'RAZORPAY_ROUTE' | 'CASHFREE_SPLIT' | 'PHONEPE_PG';
-  settlementSchedule: 'instant' | 't_plus_1' | 't_plus_2';
-  merchantAccountId?: string;
-  verified: boolean;
-  updatedAt: string;
-}

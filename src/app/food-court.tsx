@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Modal,
   Pressable,
@@ -17,6 +17,7 @@ import {
 import { CampusTheme } from '@/constants/theme';
 import { useAuth } from '@/context/auth-context';
 import { DataService } from '@/services/data-service';
+import { SoundService } from '@/services/sound-service';
 import { Order, OrderStatus, FoodItem, FoodCategory, FoodCourtPayoutConfig } from '@/types';
 
 const PRESET_DISHES = [
@@ -85,7 +86,7 @@ export default function FoodCourtScreen() {
     'UPI_DIRECT' | 'RAZORPAY_ROUTE' | 'CASHFREE_SPLIT' | 'PHONEPE_PG'
   >('UPI_DIRECT');
   const [settlementScheduleInput, setSettlementScheduleInput] = useState<
-    'instant' | 't_plus_1' | 't_plus_2'
+    'instant' | 'daily_t1' | 't_plus_1' | 't_plus_2'
   >('instant');
   const [savingBank, setSavingBank] = useState(false);
   const [showAccountNumber, setShowAccountNumber] = useState(false);
@@ -99,6 +100,17 @@ export default function FoodCourtScreen() {
   const [enteredOtp, setEnteredOtp] = useState('');
   const [otpVerifying, setOtpVerifying] = useState(false);
   const [otpFeedback, setOtpFeedback] = useState<{ success: boolean; message: string } | null>(null);
+
+  // Audio Chime & Real-Time Alert State
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [newOrderAlert, setNewOrderAlert] = useState<{
+    order: Order;
+    count: number;
+    itemsSummary: string;
+  } | null>(null);
+  const knownOrderIdsRef = useRef<Set<string>>(new Set());
+  const isInitialLoadRef = useRef<boolean>(true);
+  const alertDismissTimerRef = useRef<any>(null);
 
   // Food Items & Menu Management State
   const [foodItems, setFoodItems] = useState<FoodItem[]>([]);
@@ -137,6 +149,46 @@ export default function FoodCourtScreen() {
         DataService.getFoodItems(activeCollegeId, undefined, true),
         DataService.getPayoutConfig(profile?.assignedFoodCourtId || 'fc_jspm_main'),
       ]);
+
+      // Detect brand-new incoming orders in 'placed' status
+      if (isInitialLoadRef.current) {
+        knownOrderIdsRef.current = new Set(ords.map((o) => o.id));
+        isInitialLoadRef.current = false;
+      } else {
+        const brandNewOrders = ords.filter(
+          (o) => !knownOrderIdsRef.current.has(o.id) && o.orderStatus === 'placed'
+        );
+
+        if (brandNewOrders.length > 0) {
+          // Play kitchen alert chime
+          SoundService.playNewOrderChime();
+
+          // Prepare visual alert for newest incoming order
+          const latest = brandNewOrders[0];
+          const itemsSummary =
+            latest.items
+              ?.map((it) => `${it.quantity}x ${it.name || 'Dish'}`)
+              .join(', ') || `${latest.items?.length || 1} items`;
+
+          setNewOrderAlert({
+            order: latest,
+            count: brandNewOrders.length,
+            itemsSummary,
+          });
+
+          // Auto-dismiss alert banner after 7 seconds
+          if (alertDismissTimerRef.current) {
+            clearTimeout(alertDismissTimerRef.current);
+          }
+          alertDismissTimerRef.current = setTimeout(() => {
+            setNewOrderAlert(null);
+          }, 7000);
+        }
+
+        // Keep known order IDs up to date
+        knownOrderIdsRef.current = new Set(ords.map((o) => o.id));
+      }
+
       setOrders(ords);
       setFoodItems(items);
       setPayoutConfig(config);
@@ -146,9 +198,49 @@ export default function FoodCourtScreen() {
   };
 
   useEffect(() => {
+    SoundService.isSoundEnabled().then((enabled) => setSoundEnabled(enabled));
+  }, []);
+
+  const handleToggleSound = async () => {
+    await SoundService.unlockAudioContext();
+    const next = !soundEnabled;
+    setSoundEnabled(next);
+    await SoundService.setSoundEnabled(next);
+    if (next) {
+      SoundService.playNewOrderChime();
+    }
+  };
+
+  const handleTestChime = async () => {
+    await SoundService.testChime();
+  };
+
+  const handleViewAlertOrder = () => {
+    setActiveTab('placed');
+    setViewMode('orders');
+    setNewOrderAlert(null);
+  };
+
+  useEffect(() => {
     loadCanteenData();
-    const interval = setInterval(loadCanteenData, 5000); // Polling for live canteen orders & updates
-    return () => clearInterval(interval);
+    const interval = setInterval(loadCanteenData, 3000); // Fast 3-second live order polling
+
+    const handleStorage = (e: any) => {
+      if (e.key === 'cc_orders' || e.key === 'cc_food_items' || e.key === 'cc_payout_config') {
+        loadCanteenData();
+      }
+    };
+
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.addEventListener('storage', handleStorage);
+    }
+
+    return () => {
+      clearInterval(interval);
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.removeEventListener('storage', handleStorage);
+      }
+    };
   }, [college]);
 
   const filteredOrders = orders.filter((o) => {
@@ -181,6 +273,16 @@ export default function FoodCourtScreen() {
       await loadCanteenData();
     } catch (e: any) {
       alert(e.message || 'Payment update failed');
+    }
+  };
+
+  // 1-Click Cash Pickup at Counter (No OTP needed for cash orders)
+  const handleCompleteCashPickup = async (orderId: string) => {
+    try {
+      await DataService.completeCashOrderWithoutOtp(orderId, profile?.name || 'Food Court Staff');
+      await loadCanteenData();
+    } catch (e: any) {
+      alert(e.message || 'Failed to complete cash pickup');
     }
   };
 
@@ -375,12 +477,43 @@ export default function FoodCourtScreen() {
           <View>
             <Text style={styles.navTitle}>FOOD COURT COUNTER</Text>
             <Text style={styles.navSub}>
-              {college?.shortName} • {profile?.name || 'Suresh Patil'}
+              {payoutConfig?.businessName || 'JSPM Food Court'} • Owner:{' '}
+              <Text style={{ color: CampusTheme.colors.primary, fontWeight: '700' }}>
+                {payoutConfig?.accountHolderName || 'Suresh Patil'}
+              </Text>
             </Text>
           </View>
         </View>
 
         <View style={styles.navRight}>
+          <Pressable
+            style={[
+              styles.soundToggleBtn,
+              soundEnabled ? styles.soundToggleBtnActive : styles.soundToggleBtnMuted,
+            ]}
+            onPress={handleToggleSound}
+          >
+            <Ionicons
+              name={soundEnabled ? 'volume-high' : 'volume-mute'}
+              size={15}
+              color={soundEnabled ? '#10B981' : CampusTheme.colors.textMuted}
+            />
+            <Text
+              style={[
+                styles.soundToggleText,
+                soundEnabled && styles.soundToggleTextActive,
+              ]}
+            >
+              {soundEnabled ? 'Chime ON' : 'Muted'}
+            </Text>
+          </Pressable>
+
+          {soundEnabled && (
+            <Pressable style={styles.soundTestBtn} onPress={handleTestChime}>
+              <Ionicons name="musical-notes" size={13} color={CampusTheme.colors.primary} />
+            </Pressable>
+          )}
+
           <Pressable style={styles.switchPortalBtn} onPress={() => router.replace('/login')}>
             <Ionicons name="swap-horizontal" size={16} color={CampusTheme.colors.primary} />
             <Text style={styles.switchPortalText}>Portals</Text>
@@ -436,6 +569,46 @@ export default function FoodCourtScreen() {
         </Pressable>
       </View>
 
+      {/* REAL-TIME NEW ORDER VISUAL ALERT BANNER */}
+      {newOrderAlert && (
+        <View style={styles.alertBanner}>
+          <View style={styles.alertBannerLeft}>
+            <View style={styles.alertPulseIcon}>
+              <Ionicons name="notifications" size={18} color="#0D1411" />
+            </View>
+            <View style={styles.alertBannerContent}>
+              <View style={styles.alertBannerBadgeRow}>
+                <Text style={styles.alertBannerTitle}>
+                  🔔 NEW ORDER {newOrderAlert.count > 1 ? `(${newOrderAlert.count} INCOMING)` : ''} RECEIVED!
+                </Text>
+                <View style={styles.alertLiveTag}>
+                  <Text style={styles.alertLiveTagText}>JUST NOW</Text>
+                </View>
+              </View>
+              <Text style={styles.alertBannerCustomer} numberOfLines={1}>
+                <Text style={{ fontWeight: '800', color: '#FFFFFF' }}>
+                  {newOrderAlert.order.studentName || 'Student'}
+                </Text>
+                {' '}({newOrderAlert.order.studentIdentifier || 'Campus Customer'}) • {newOrderAlert.itemsSummary}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.alertBannerRight}>
+            <View style={styles.alertTotalBadge}>
+              <Text style={styles.alertTotalText}>₹{newOrderAlert.order.total}</Text>
+            </View>
+            <Pressable style={styles.alertViewBtn} onPress={handleViewAlertOrder}>
+              <Ionicons name="arrow-forward-circle" size={16} color="#0D1411" />
+              <Text style={styles.alertViewBtnText}>View</Text>
+            </Pressable>
+            <Pressable style={styles.alertDismissBtn} onPress={() => setNewOrderAlert(null)}>
+              <Ionicons name="close" size={18} color="#A7F3D0" />
+            </Pressable>
+          </View>
+        </View>
+      )}
+
       {viewMode === 'orders' ? (
         <>
           {/* QUEUE STATUS TABS */}
@@ -444,21 +617,36 @@ export default function FoodCourtScreen() {
           {tabs.map((tab) => {
             const count = orders.filter((o) => o.orderStatus === tab.key).length;
             const isActive = activeTab === tab.key;
+            const isAttention = tab.key === 'placed' && count > 0;
             return (
               <Pressable
                 key={tab.key}
-                style={[styles.queueTab, isActive && styles.activeQueueTab]}
-                onPress={() => setActiveTab(tab.key)}
+                style={[
+                  styles.queueTab,
+                  isActive && styles.activeQueueTab,
+                  isAttention && !isActive && styles.queueTabAttention,
+                ]}
+                onPress={() => {
+                  SoundService.unlockAudioContext();
+                  setActiveTab(tab.key);
+                }}
               >
                 <Text style={[styles.queueTabText, isActive && styles.activeQueueTabText]}>
                   {tab.label}
                 </Text>
                 {count > 0 && (
-                  <View style={[styles.tabCountBadge, isActive && styles.activeTabCountBadge]}>
+                  <View
+                    style={[
+                      styles.tabCountBadge,
+                      isActive && styles.activeTabCountBadge,
+                      isAttention && styles.tabCountBadgeAttention,
+                    ]}
+                  >
                     <Text
                       style={[
                         styles.tabCountText,
                         isActive && styles.activeTabCountText,
+                        isAttention && styles.tabCountTextAttention,
                       ]}
                     >
                       {count}
@@ -486,16 +674,55 @@ export default function FoodCourtScreen() {
           filteredOrders.map((order) => (
             <View key={order.id} style={styles.orderCard}>
               <View style={styles.orderTopRow}>
-                <View>
-                  <Text style={styles.orderNum}>{order.orderNumber}</Text>
-                  <Text style={styles.studentInfo}>
-                    {order.studentName} ({order.studentIdentifier || 'Student'})
-                  </Text>
+                <View style={{ flex: 1, paddingRight: 8 }}>
+                  <View style={styles.orderNumRow}>
+                    <Text style={styles.orderNum}>{order.orderNumber}</Text>
+                    <Text style={styles.orderTimeText}>
+                      {new Date(order.createdAt).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </Text>
+                  </View>
+
+                  {/* PROMINENT CUSTOMER NAME DISPLAY */}
+                  <View style={styles.customerCardBadge}>
+                    <Ionicons name="person-circle" size={18} color={CampusTheme.colors.primary} />
+                    <Text style={styles.customerNameText}>
+                      {order.studentName || 'Student Customer'}
+                    </Text>
+                    <Text style={styles.customerIdText}>
+                      ({order.studentIdentifier || 'Student'})
+                    </Text>
+                  </View>
                 </View>
 
-                <View style={styles.paymentStatusBadge}>
-                  <Text style={styles.paymentStatusText}>
-                    {order.paymentMethod} · {order.paymentStatus.toUpperCase()}
+                <View
+                  style={[
+                    styles.paymentStatusBadge,
+                    order.paymentStatus === 'paid'
+                      ? styles.paymentStatusPaidBadge
+                      : styles.paymentStatusCashBadge,
+                  ]}
+                >
+                  <Ionicons
+                    name={order.paymentMethod === 'UPI' ? 'qr-code' : 'cash'}
+                    size={13}
+                    color={order.paymentStatus === 'paid' ? '#0D1411' : '#FDE047'}
+                  />
+                  <Text
+                    style={[
+                      styles.paymentStatusText,
+                      order.paymentStatus === 'paid'
+                        ? styles.paymentStatusPaidText
+                        : styles.paymentStatusCashText,
+                    ]}
+                  >
+                    {order.paymentMethod === 'UPI' && order.paymentStatus === 'paid'
+                      ? 'UPI · PAID'
+                      : order.paymentStatus === 'cash_received'
+                      ? 'CASH RECEIVED'
+                      : 'CASH DUE'}
                   </Text>
                 </View>
               </View>
@@ -550,28 +777,48 @@ export default function FoodCourtScreen() {
 
                 {order.orderStatus === 'ready' && (
                   <View style={styles.readyActions}>
-                    {order.paymentMethod === 'CASH' &&
-                      order.paymentStatus === 'cash_pending' && (
+                    {order.paymentMethod === 'CASH' && order.paymentStatus !== 'paid' ? (
+                      <>
+                        {/* 1-CLICK CASH PICKUP: CASH IS COLLECTED, NO OTP REQUIRED */}
                         <Pressable
-                          style={styles.cashConfirmBtn}
-                          onPress={() => handleConfirmCash(order.id)}
+                          style={styles.cashPickupBtn}
+                          onPress={() => handleCompleteCashPickup(order.id)}
                         >
-                          <Ionicons name="cash" size={16} color="#0D1411" />
-                          <Text style={styles.cashConfirmText}>Confirm Cash (₹{order.total})</Text>
+                          <Ionicons name="cash" size={18} color="#0D1411" />
+                          <Text style={styles.cashPickupBtnText}>
+                            💵 Receive Cash (₹{order.total}) & Hand Over Food
+                          </Text>
                         </Pressable>
-                      )}
 
-                    <Pressable
-                      style={styles.actionBtnOtp}
-                      onPress={() => {
-                        setSelectedOrderForOtp(order);
-                        setEnteredOtp('');
-                        setOtpFeedback(null);
-                      }}
-                    >
-                      <Ionicons name="keypad" size={16} color={CampusTheme.colors.background} />
-                      <Text style={styles.actionBtnOtpText}>Verify Pickup OTP</Text>
-                    </Pressable>
+                        {/* SECONDARY OTP VERIFICATION (OPTIONAL FOR CASH) */}
+                        <Pressable
+                          style={styles.actionBtnOtpSecondary}
+                          onPress={() => {
+                            setSelectedOrderForOtp(order);
+                            setEnteredOtp('');
+                            setOtpFeedback(null);
+                          }}
+                        >
+                          <Ionicons name="keypad" size={14} color={CampusTheme.colors.primary} />
+                          <Text style={styles.actionBtnOtpSecondaryText}>
+                            Or Verify 4-Digit OTP ({order.pickupOtp})
+                          </Text>
+                        </Pressable>
+                      </>
+                    ) : (
+                      /* ONLINE UPI ORDERS: REQUIRE 4-DIGIT SECURE PICKUP OTP */
+                      <Pressable
+                        style={styles.actionBtnOtp}
+                        onPress={() => {
+                          setSelectedOrderForOtp(order);
+                          setEnteredOtp('');
+                          setOtpFeedback(null);
+                        }}
+                      >
+                        <Ionicons name="shield-checkmark" size={16} color={CampusTheme.colors.background} />
+                        <Text style={styles.actionBtnOtpText}>🔑 Verify 4-Digit OTP & Complete Pickup</Text>
+                      </Pressable>
+                    )}
                   </View>
                 )}
 
@@ -579,7 +826,7 @@ export default function FoodCourtScreen() {
                   <View style={styles.completedBadge}>
                     <Ionicons name="checkmark-circle" size={16} color={CampusTheme.colors.primary} />
                     <Text style={styles.completedText}>
-                      Completed & Picked Up at{' '}
+                      Completed & Handed Over at{' '}
                       {order.pickupVerifiedAt
                         ? new Date(order.pickupVerifiedAt).toLocaleTimeString([], {
                             hour: '2-digit',
@@ -1331,17 +1578,21 @@ export default function FoodCourtScreen() {
                 </Pressable>
               </View>
 
-              <Text style={styles.otpModalTitle}>Verify Pickup OTP</Text>
+              <Text style={styles.otpModalTitle}>Verify 4-Digit Pickup OTP</Text>
               <Text style={styles.otpModalSubtitle}>
-                Ask student <Text style={{ color: CampusTheme.colors.primary, fontWeight: '800' }}>{selectedOrderForOtp.studentName}</Text> for their 6-digit code for order {selectedOrderForOtp.orderNumber}.
+                Ask student{' '}
+                <Text style={{ color: CampusTheme.colors.primary, fontWeight: '800' }}>
+                  {selectedOrderForOtp.studentName}
+                </Text>{' '}
+                for their 4-digit pickup code for order {selectedOrderForOtp.orderNumber}.
               </Text>
 
               <TextInput
                 style={styles.otpInput}
-                placeholder="6-digit OTP (e.g. 482731)"
+                placeholder="4-digit OTP (e.g. 4827)"
                 placeholderTextColor={CampusTheme.colors.textDim}
                 keyboardType="number-pad"
-                maxLength={6}
+                maxLength={4}
                 value={enteredOtp}
                 onChangeText={setEnteredOtp}
               />
@@ -1923,10 +2174,44 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 12,
   },
+  orderNumRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingRight: 6,
+  },
   orderNum: {
     fontSize: 18,
     fontWeight: '800',
     color: CampusTheme.colors.text,
+  },
+  orderTimeText: {
+    fontSize: 11,
+    color: CampusTheme.colors.textMuted,
+    fontWeight: '600',
+  },
+  customerCardBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(142, 228, 175, 0.12)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    marginTop: 6,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: 'rgba(142, 228, 175, 0.25)',
+  },
+  customerNameText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: CampusTheme.colors.text,
+  },
+  customerIdText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: CampusTheme.colors.primary,
   },
   studentInfo: {
     fontSize: 13,
@@ -1935,17 +2220,33 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   paymentStatusBadge: {
-    backgroundColor: '#1E3528',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.2)',
+  },
+  paymentStatusPaidBadge: {
+    backgroundColor: CampusTheme.colors.primary,
+    borderColor: CampusTheme.colors.primary,
+  },
+  paymentStatusCashBadge: {
+    backgroundColor: 'rgba(251, 191, 36, 0.15)',
+    borderColor: '#FBBF24',
   },
   paymentStatusText: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#A3D9BE',
+  },
+  paymentStatusPaidText: {
+    color: CampusTheme.colors.background,
+    fontWeight: '900',
+  },
+  paymentStatusCashText: {
+    color: '#FDE047',
+    fontWeight: '800',
   },
   itemsList: {
     backgroundColor: '#0E1812',
@@ -2022,7 +2323,40 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   readyActions: {
+    gap: 10,
+  },
+  cashPickupBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: 8,
+    backgroundColor: '#FBBF24',
+    borderRadius: 14,
+    paddingVertical: 13,
+    paddingHorizontal: 16,
+    ...CampusTheme.shadows.button,
+  },
+  cashPickupBtnText: {
+    color: '#0D1411',
+    fontSize: 13,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  actionBtnOtpSecondary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#162820',
+    borderRadius: 10,
+    paddingVertical: 9,
+    borderWidth: 1,
+    borderColor: 'rgba(142, 228, 175, 0.25)',
+  },
+  actionBtnOtpSecondaryText: {
+    color: CampusTheme.colors.primary,
+    fontSize: 12,
+    fontWeight: '700',
   },
   cashConfirmBtn: {
     flexDirection: 'row',
@@ -2044,8 +2378,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     backgroundColor: CampusTheme.colors.primary,
-    borderRadius: 12,
-    paddingVertical: 12,
+    borderRadius: 14,
+    paddingVertical: 13,
+    paddingHorizontal: 16,
+    ...CampusTheme.shadows.button,
   },
   actionBtnOtpText: {
     color: CampusTheme.colors.background,
@@ -3036,6 +3372,158 @@ const styles = StyleSheet.create({
     color: CampusTheme.colors.textMuted,
     flex: 1,
     lineHeight: 16,
+  },
+
+  // Audio chime & Sound Controls
+  soundToggleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#131F19',
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  soundToggleBtnActive: {
+    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+    borderColor: 'rgba(16, 185, 129, 0.35)',
+  },
+  soundToggleBtnMuted: {
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  soundToggleText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: CampusTheme.colors.textMuted,
+  },
+  soundToggleTextActive: {
+    color: '#10B981',
+  },
+  soundTestBtn: {
+    backgroundColor: '#131F19',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(142, 228, 175, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  // Real-time Visual Alert Banner
+  alertBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#064E3B',
+    marginHorizontal: 16,
+    marginTop: 10,
+    marginBottom: 4,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: 1.5,
+    borderColor: '#34D399',
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  alertBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  alertPulseIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#34D399',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  alertBannerContent: {
+    flex: 1,
+  },
+  alertBannerBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  alertBannerTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#A7F3D0',
+    letterSpacing: 0.5,
+  },
+  alertLiveTag: {
+    backgroundColor: '#059669',
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  alertLiveTagText: {
+    fontSize: 9,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+  },
+  alertBannerCustomer: {
+    fontSize: 13,
+    color: '#E6F4EA',
+    marginTop: 2,
+  },
+  alertBannerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginLeft: 10,
+  },
+  alertTotalBadge: {
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  alertTotalText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  alertViewBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#34D399',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  alertViewBtnText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#0D1411',
+  },
+  alertDismissBtn: {
+    padding: 4,
+  },
+
+  // Attention Badges for New Orders Tab
+  queueTabAttention: {
+    borderColor: 'rgba(52, 211, 153, 0.5)',
+    backgroundColor: 'rgba(52, 211, 153, 0.08)',
+  },
+  tabCountBadgeAttention: {
+    backgroundColor: '#34D399',
+  },
+  tabCountTextAttention: {
+    color: '#0D1411',
+    fontWeight: '900',
   },
 });
 

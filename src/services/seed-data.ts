@@ -645,7 +645,7 @@ export const SEED_ACTIVE_ORDER: Order = {
   paymentMethod: 'CASH',
   paymentStatus: 'cash_pending',
   orderStatus: 'placed',
-  pickupOtp: '482731',
+  pickupOtp: '4827',
   createdAt: '2026-09-21T08:50:00Z',
   updatedAt: '2026-09-21T08:50:00Z',
   statusHistory: [
