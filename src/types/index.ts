@@ -23,6 +23,11 @@ export interface UserProfile {
   status: UserStatus;
   createdAt: string;
 
+  // Authentication & Management
+  username?: string;
+  passwordHash?: string;
+  createdBy?: string;
+
   // Student specific
   department?: string;
   year?: string;

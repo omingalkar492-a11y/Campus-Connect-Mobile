@@ -109,7 +109,7 @@ export default function CollegeAdminScreen() {
       active: true,
       displayOrder: locations360.length + 1,
     };
-    await DataService.add360Location(newSpot);
+    await DataService.add360Location(newSpot, 'college_admin');
     setShowAdd360Modal(false);
     setNewSpotName('');
     setNewSpotDesc('');
@@ -118,7 +118,7 @@ export default function CollegeAdminScreen() {
   };
 
   const handleDelete360Spot = async (id: string) => {
-    await DataService.delete360Location(id);
+    await DataService.delete360Location(id, 'college_admin');
     await loadAdminData();
   };
 
@@ -149,7 +149,7 @@ export default function CollegeAdminScreen() {
       createdAt: new Date().toISOString(),
       permissions: newStaffPermissions,
     };
-    await DataService.addStaffMember(newMember);
+    await DataService.addStaffMember(newMember, 'college_admin');
     setShowAddStaffModal(false);
     setNewStaffName('');
     setNewStaffEmail('');

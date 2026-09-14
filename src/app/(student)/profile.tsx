@@ -19,20 +19,12 @@ import { DEMO_PROFILES, SEED_COLLEGES } from '@/services/seed-data';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { profile, college, logout, switchDemoRole } = useAuth();
+  const { profile, college, logout } = useAuth();
   const { isDark, toggleTheme, colors } = useAppTheme();
-
-  const [roleModalVisible, setRoleModalVisible] = useState(false);
 
   const handleSignOut = async () => {
     await logout();
     router.replace('/login');
-  };
-
-  const handleSwitchRole = async (email: string) => {
-    await switchDemoRole(email);
-    setRoleModalVisible(false);
-    router.replace('/');
   };
 
   return (
@@ -66,10 +58,7 @@ export default function ProfileScreen() {
         {/* SETTINGS SECTIONS */}
         <View style={styles.settingsGroup}>
           {/* Campus */}
-          <Pressable
-            style={[styles.settingItem, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
-            onPress={() => setRoleModalVisible(true)}
-          >
+          <View style={[styles.settingItem, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
             <View style={[styles.settingIconBox, { backgroundColor: colors.primaryDim }]}>
               <Ionicons name="business" size={20} color={colors.primary} />
             </View>
@@ -79,8 +68,7 @@ export default function ProfileScreen() {
                 {college?.shortName || 'JSPM Tathawade'} • {college?.city || 'Pune'}
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-          </Pressable>
+          </View>
 
           {/* Access / Academics */}
           <View style={[styles.settingItem, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
@@ -119,22 +107,6 @@ export default function ProfileScreen() {
             />
           </View>
 
-          {/* Switch Role / Quick Institutional Switcher */}
-          <Pressable
-            style={[styles.settingItem, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
-            onPress={() => setRoleModalVisible(true)}
-          >
-            <View style={[styles.settingIconBox, { backgroundColor: colors.warningBg }]}>
-              <Ionicons name="swap-horizontal" size={20} color={colors.warning} />
-            </View>
-            <View style={styles.settingContent}>
-              <Text style={[styles.settingTitle, { color: colors.text }]}>Switch Role / College</Text>
-              <Text style={[styles.settingValue, { color: colors.textMuted }]}>
-                Admin, Food Court, Faculty, Super Admin
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-          </Pressable>
         </View>
 
         {/* SIGN OUT BUTTON (Matches ui_ref7.png) */}
@@ -145,99 +117,9 @@ export default function ProfileScreen() {
 
         {/* FOOTER */}
         <Text style={styles.footerText}>
-          Campus Connect MVP • multi-college ready
+          Campus Connect • multi-college ready
         </Text>
       </ScrollView>
-
-      {/* INSTITUTION / ROLE SWITCHER MODAL */}
-      <Modal
-        visible={roleModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setRoleModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalHeading, { color: colors.text }]}>Switch Role or College</Text>
-              <Pressable onPress={() => setRoleModalVisible(false)}>
-                <Ionicons name="close-circle" size={26} color={colors.textMuted} />
-              </Pressable>
-            </View>
-            <Text style={[styles.modalDesc, { color: colors.textMuted }]}>
-              Select any institutional role to verify dashboard authorization and multi-tenant scoping:
-            </Text>
-
-            <View style={styles.roleList}>
-              <Pressable
-                style={[styles.roleChoice, { backgroundColor: colors.background, borderColor: colors.cardBorder }]}
-                onPress={() => handleSwitchRole('student@jspm.edu')}
-              >
-                <Ionicons name="school" size={20} color={colors.primary} />
-                <View style={styles.roleChoiceText}>
-                  <Text style={[styles.roleChoiceName, { color: colors.text }]}>Student — Aarav Kulkarni</Text>
-                  <Text style={[styles.roleChoiceSub, { color: colors.textMuted }]}>JSPM Tathawade · IT Div A</Text>
-                </View>
-              </Pressable>
-
-              <Pressable
-                style={[styles.roleChoice, { backgroundColor: colors.background, borderColor: colors.cardBorder }]}
-                onPress={() => handleSwitchRole('admin@jspm.edu')}
-              >
-                <Ionicons name="business" size={20} color={colors.warning} />
-                <View style={styles.roleChoiceText}>
-                  <Text style={[styles.roleChoiceName, { color: colors.text }]}>College Admin — Dr. Sharma</Text>
-                  <Text style={[styles.roleChoiceSub, { color: colors.textMuted }]}>JSPM Tathawade Administrative Portal</Text>
-                </View>
-              </Pressable>
-
-              <Pressable
-                style={[styles.roleChoice, { backgroundColor: colors.background, borderColor: colors.cardBorder }]}
-                onPress={() => handleSwitchRole('canteen@jspm.edu')}
-              >
-                <Ionicons name="fast-food" size={20} color="#F472B6" />
-                <View style={styles.roleChoiceText}>
-                  <Text style={[styles.roleChoiceName, { color: colors.text }]}>Food Court Staff — Suresh</Text>
-                  <Text style={[styles.roleChoiceSub, { color: colors.textMuted }]}>Order Queue & OTP Verification</Text>
-                </View>
-              </Pressable>
-
-              <Pressable
-                style={[styles.roleChoice, { backgroundColor: colors.background, borderColor: colors.cardBorder }]}
-                onPress={() => handleSwitchRole('faculty@jspm.edu')}
-              >
-                <Ionicons name="person-circle" size={20} color="#60A5FA" />
-                <View style={styles.roleChoiceText}>
-                  <Text style={[styles.roleChoiceName, { color: colors.text }]}>Faculty — Sneha Deshmukh</Text>
-                  <Text style={[styles.roleChoiceSub, { color: colors.textMuted }]}>Timetable & Class Teacher Portal</Text>
-                </View>
-              </Pressable>
-
-              <Pressable
-                style={[styles.roleChoice, { backgroundColor: colors.background, borderColor: colors.cardBorder }]}
-                onPress={() => handleSwitchRole('superadmin@campusconnect.in')}
-              >
-                <Ionicons name="planet" size={20} color="#A78BFA" />
-                <View style={styles.roleChoiceText}>
-                  <Text style={[styles.roleChoiceName, { color: colors.text }]}>Super Admin — Platform</Text>
-                  <Text style={[styles.roleChoiceSub, { color: colors.textMuted }]}>Multi-College Governance & System Config</Text>
-                </View>
-              </Pressable>
-
-              <Pressable
-                style={[styles.roleChoice, { backgroundColor: colors.background, borderColor: 'rgba(52, 211, 153, 0.3)' }]}
-                onPress={() => handleSwitchRole('student@coep.edu')}
-              >
-                <Ionicons name="shield-checkmark" size={20} color="#34D399" />
-                <View style={styles.roleChoiceText}>
-                  <Text style={[styles.roleChoiceName, { color: colors.text }]}>Student — COEP Tech</Text>
-                  <Text style={[styles.roleChoiceSub, { color: colors.textMuted }]}>COEP Technological University · Pune</Text>
-                </View>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }

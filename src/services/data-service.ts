@@ -10,7 +10,7 @@ import {
   updateDoc,
   addDoc,
   orderBy,
-  serverTimestamp,
+  deleteDoc,
 } from 'firebase/firestore';
 import { Platform } from 'react-native';
 
@@ -25,6 +25,7 @@ import {
   SEED_NOTICES,
   SEED_ACTIVE_ORDER,
   DEMO_PROFILES,
+  SUPER_ADMIN_ACCOUNT,
   SEED_PAYOUT_CONFIGS,
 } from './seed-data';
 import {
@@ -41,6 +42,7 @@ import {
   PaymentMethod,
   StaffPermission,
   FoodCourtPayoutConfig,
+  UserRole,
 } from '@/types';
 
 // In-memory runtime cache/store to ensure snappy UI and offline/demo resilience
@@ -50,10 +52,12 @@ let runtime360Locations: Campus360Location[] = [...SEED_360_LOCATIONS];
 let runtimeRooms: Room[] = [...SEED_ROOMS];
 let runtimeNotices: Notice[] = [...SEED_NOTICES];
 let runtimeUsers: Record<string, UserProfile> = {};
+let runtimeCollegeAdmins: Record<string, UserProfile> = {};
 let runtimePayoutConfigs: Record<string, FoodCourtPayoutConfig> = { ...SEED_PAYOUT_CONFIGS };
 let otpAttempts: Record<string, number> = {};
 
 const USERS_STORAGE_KEY = 'cc_registered_users';
+const COLLEGE_ADMINS_STORAGE_KEY = 'cc_college_admins';
 const FOOD_ITEMS_STORAGE_KEY = 'cc_food_items';
 const LOCATIONS_360_STORAGE_KEY = 'cc_360_locations';
 const PAYOUT_CONFIGS_STORAGE_KEY = 'cc_payout_configs';
@@ -89,6 +93,13 @@ const saveToStorage = async (key: string, data: any) => {
     if (usersRaw) {
       const parsedUsers = JSON.parse(usersRaw);
       Object.assign(runtimeUsers, parsedUsers);
+    }
+
+    const adminsRaw = await readStorage(COLLEGE_ADMINS_STORAGE_KEY);
+    if (adminsRaw) {
+      const parsedAdmins = JSON.parse(adminsRaw);
+      Object.assign(runtimeCollegeAdmins, parsedAdmins);
+      Object.assign(runtimeUsers, parsedAdmins);
     }
 
     const foodRaw = await readStorage(FOOD_ITEMS_STORAGE_KEY);
@@ -168,9 +179,20 @@ export const DataService = {
   async getUserProfile(uid: string, email?: string): Promise<UserProfile | null> {
     const cleanEmail = email?.toLowerCase().trim();
 
-    // Layer 1: Check in-memory registered users
+    // Check Super Admin account (Omkumar Gajanan Ingalkar)
+    if (
+      uid === SUPER_ADMIN_ACCOUNT.uid ||
+      cleanEmail === SUPER_ADMIN_ACCOUNT.email.toLowerCase() ||
+      cleanEmail === SUPER_ADMIN_ACCOUNT.username?.toLowerCase()
+    ) {
+      return SUPER_ADMIN_ACCOUNT;
+    }
+
+    // Layer 1: Check in-memory registered users & college admins
     if (runtimeUsers[uid]) return runtimeUsers[uid];
     if (cleanEmail && runtimeUsers[cleanEmail]) return runtimeUsers[cleanEmail];
+    if (runtimeCollegeAdmins[uid]) return runtimeCollegeAdmins[uid];
+    if (cleanEmail && runtimeCollegeAdmins[cleanEmail]) return runtimeCollegeAdmins[cleanEmail];
 
     // Layer 2: Check local persistent storage
     try {
@@ -186,9 +208,22 @@ export const DataService = {
         if (runtimeUsers[uid]) return runtimeUsers[uid];
         if (cleanEmail && runtimeUsers[cleanEmail]) return runtimeUsers[cleanEmail];
       }
+
+      let adminsRaw: string | null = null;
+      if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+        adminsRaw = window.localStorage.getItem(COLLEGE_ADMINS_STORAGE_KEY);
+      } else {
+        adminsRaw = await AsyncStorage.getItem(COLLEGE_ADMINS_STORAGE_KEY);
+      }
+      if (adminsRaw) {
+        const parsed = JSON.parse(adminsRaw);
+        Object.assign(runtimeCollegeAdmins, parsed);
+        if (runtimeCollegeAdmins[uid]) return runtimeCollegeAdmins[uid];
+        if (cleanEmail && runtimeCollegeAdmins[cleanEmail]) return runtimeCollegeAdmins[cleanEmail];
+      }
     } catch {}
 
-    // Layer 3: Check demo profiles by email
+    // Layer 3: Check demo profiles
     if (cleanEmail && DEMO_PROFILES[cleanEmail]) {
       return DEMO_PROFILES[cleanEmail];
     }
@@ -204,8 +239,8 @@ export const DataService = {
       }
     } catch {}
 
-    // Layer 5: If a real user registered with an email, construct their personalized profile
-    if (cleanEmail && cleanEmail !== 'student@jspm.edu') {
+    // Layer 5: Fallback synthesization for registered student emails
+    if (cleanEmail && cleanEmail.includes('@') && cleanEmail !== SUPER_ADMIN_ACCOUNT.email) {
       const namePart = cleanEmail.split('@')[0];
       const formattedName = namePart
         .replace(/[._]/g, ' ')
@@ -215,13 +250,10 @@ export const DataService = {
 
       const synthesizedProfile: UserProfile = {
         uid,
-        name: formattedName || 'Registered Student',
+        name: formattedName || 'Student',
         email: cleanEmail,
         role: 'student',
         collegeId: 'col_jspm_tathawade',
-        department: 'Information Technology',
-        year: '3rd Year',
-        division: 'Div A',
         status: 'active',
         createdAt: new Date().toISOString(),
       };
@@ -230,8 +262,7 @@ export const DataService = {
       return synthesizedProfile;
     }
 
-    // Layer 6: Default fallback profile for Aarav
-    return DEMO_PROFILES['student@jspm.edu'];
+    return null;
   },
 
   async saveUserProfile(profile: UserProfile): Promise<void> {
@@ -325,12 +356,15 @@ export const DataService = {
     return list;
   },
 
-  // 6. 360 Locations
+  // 6. 360 Locations (Strictly reserved for College Admin)
   async get360Locations(collegeId: string): Promise<Campus360Location[]> {
     return runtime360Locations.filter((l) => l.collegeId === collegeId && l.active);
   },
 
-  async add360Location(location: Campus360Location): Promise<void> {
+  async add360Location(location: Campus360Location, actorRole?: UserRole): Promise<void> {
+    if (actorRole === 'super_admin') {
+      throw new Error('Super Admin does not have permission to modify college 360° views. Only the assigned College Admin can manage campus 360° tours.');
+    }
     const url = (location.embedUrl || location.externalUrl || '').trim();
     const cleanLocation: Campus360Location = {
       ...location,
@@ -344,7 +378,10 @@ export const DataService = {
     } catch {}
   },
 
-  async update360Location(locationId: string, updates: Partial<Campus360Location>): Promise<void> {
+  async update360Location(locationId: string, updates: Partial<Campus360Location>, actorRole?: UserRole): Promise<void> {
+    if (actorRole === 'super_admin') {
+      throw new Error('Super Admin does not have permission to modify college 360° views. Only the assigned College Admin can manage campus 360° tours.');
+    }
     const idx = runtime360Locations.findIndex((l) => l.id === locationId);
     if (idx !== -1) {
       if (updates.embedUrl) {
@@ -358,7 +395,10 @@ export const DataService = {
     }
   },
 
-  async delete360Location(locationId: string): Promise<void> {
+  async delete360Location(locationId: string, actorRole?: UserRole): Promise<void> {
+    if (actorRole === 'super_admin') {
+      throw new Error('Super Admin does not have permission to modify college 360° views. Only the assigned College Admin can manage campus 360° tours.');
+    }
     runtime360Locations = runtime360Locations.filter((l) => l.id !== locationId);
     await saveToStorage(LOCATIONS_360_STORAGE_KEY, runtime360Locations);
   },
@@ -833,7 +873,13 @@ export const DataService = {
     return target;
   },
 
-  async addStaffMember(member: UserProfile): Promise<UserProfile> {
+  async addStaffMember(member: UserProfile, actorRole?: UserRole): Promise<UserProfile> {
+    if (actorRole === 'super_admin') {
+      throw new Error('Super Admin does not have permission to create Teacher or Food Court Staff accounts. Only the College Admin can issue staff credentials.');
+    }
+    if (member.role === 'college_admin' || member.role === 'super_admin') {
+      throw new Error('Only Super Admin is authorized to create College Admin accounts.');
+    }
     runtimeUsers[member.uid] = member;
     if (member.email) {
       runtimeUsers[member.email.toLowerCase()] = member;
@@ -843,6 +889,145 @@ export const DataService = {
       await setDoc(doc(db, 'users', member.uid), member);
     } catch {}
     return member;
+  },
+
+  // 15. College Admin ID Authority (EXCLUSIVELY GOVERNED BY SUPER ADMIN)
+  async getCollegeAdmins(collegeId?: string): Promise<UserProfile[]> {
+    const list: UserProfile[] = [];
+    const seen = new Set<string>();
+
+    const checkAndAdd = (u: UserProfile) => {
+      if (u.role === 'college_admin' && !seen.has(u.uid)) {
+        if (!collegeId || u.collegeId === collegeId) {
+          seen.add(u.uid);
+          list.push(u);
+        }
+      }
+    };
+
+    Object.values(runtimeCollegeAdmins).forEach(checkAndAdd);
+    Object.values(runtimeUsers).forEach(checkAndAdd);
+
+    return list;
+  },
+
+  async addCollegeAdmin(
+    adminData: {
+      name: string;
+      email: string;
+      password: string;
+      collegeId: string;
+      designation?: string;
+    },
+    actorRole?: UserRole
+  ): Promise<UserProfile> {
+    if (actorRole && actorRole !== 'super_admin') {
+      throw new Error('Security Violation: Only the Super Admin is permitted to create College Admin accounts.');
+    }
+
+    const cleanEmail = adminData.email.toLowerCase().trim();
+    const cleanName = adminData.name.trim();
+    const cleanPassword = adminData.password.trim();
+
+    if (!cleanEmail || !cleanPassword || !cleanName) {
+      throw new Error('Please provide name, email, and password for the College Admin.');
+    }
+
+    if (cleanPassword.length < 6) {
+      throw new Error('Password must be at least 6 characters long.');
+    }
+
+    const newAdmin: UserProfile = {
+      uid: `col_admin_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      role: 'college_admin',
+      collegeId: adminData.collegeId,
+      name: cleanName,
+      email: cleanEmail,
+      passwordHash: cleanPassword,
+      designation: adminData.designation?.trim() || 'Campus Administrator & Dean',
+      status: 'active',
+      createdAt: new Date().toISOString(),
+      createdBy: 'super_admin',
+    };
+
+    runtimeCollegeAdmins[newAdmin.uid] = newAdmin;
+    runtimeCollegeAdmins[cleanEmail] = newAdmin;
+    runtimeUsers[newAdmin.uid] = newAdmin;
+    runtimeUsers[cleanEmail] = newAdmin;
+
+    await saveToStorage(COLLEGE_ADMINS_STORAGE_KEY, runtimeCollegeAdmins);
+    await saveToStorage(USERS_STORAGE_KEY, runtimeUsers);
+
+    try {
+      await withTimeout(setDoc(doc(db, 'users', newAdmin.uid), newAdmin), 1500);
+    } catch {}
+
+    return newAdmin;
+  },
+
+  async deleteCollegeAdmin(uid: string, actorRole?: UserRole): Promise<void> {
+    if (actorRole && actorRole !== 'super_admin') {
+      throw new Error('Security Violation: Only the Super Admin is permitted to delete College Admin accounts.');
+    }
+
+    const admin = runtimeCollegeAdmins[uid] || runtimeUsers[uid];
+    delete runtimeCollegeAdmins[uid];
+    delete runtimeUsers[uid];
+    if (admin?.email) {
+      delete runtimeCollegeAdmins[admin.email.toLowerCase()];
+      delete runtimeUsers[admin.email.toLowerCase()];
+    }
+
+    await saveToStorage(COLLEGE_ADMINS_STORAGE_KEY, runtimeCollegeAdmins);
+    await saveToStorage(USERS_STORAGE_KEY, runtimeUsers);
+
+    try {
+      await withTimeout(deleteDoc(doc(db, 'users', uid)), 1500);
+    } catch {}
+  },
+
+  // 16. Unified Institutional Credential Authenticator
+  async authenticateCredentials(
+    identifier: string,
+    pass: string
+  ): Promise<UserProfile | null> {
+    const cleanId = identifier.toLowerCase().trim();
+    const cleanPass = pass.trim();
+
+    // 1. Super Admin Authentication (Omkumar Gajanan Ingalkar)
+    if (
+      cleanId === SUPER_ADMIN_ACCOUNT.email.toLowerCase() ||
+      cleanId === SUPER_ADMIN_ACCOUNT.username?.toLowerCase()
+    ) {
+      if (cleanPass === SUPER_ADMIN_ACCOUNT.passwordHash) {
+        return SUPER_ADMIN_ACCOUNT;
+      }
+      throw new Error('Incorrect password for Super Admin account.');
+    }
+
+    // 2. College Admin Authentication (Created by Super Admin)
+    const matchedAdmin =
+      runtimeCollegeAdmins[cleanId] ||
+      Object.values(runtimeCollegeAdmins).find(
+        (a) =>
+          a.email.toLowerCase() === cleanId ||
+          a.username?.toLowerCase() === cleanId
+      ) ||
+      Object.values(runtimeUsers).find(
+        (u) =>
+          u.role === 'college_admin' &&
+          (u.email.toLowerCase() === cleanId ||
+            u.username?.toLowerCase() === cleanId)
+      );
+
+    if (matchedAdmin) {
+      if (matchedAdmin.passwordHash && matchedAdmin.passwordHash === cleanPass) {
+        return matchedAdmin;
+      }
+      throw new Error('Incorrect password for College Admin account.');
+    }
+
+    return null;
   },
 
   // 12. Food Court Bank Account & Payout Gateway Configuration

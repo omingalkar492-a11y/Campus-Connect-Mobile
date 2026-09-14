@@ -23,16 +23,21 @@ service cloud.firestore {
       return isAuthenticated() && getUserRole() == 'super_admin';
     }
 
+    // Strict College Admin check (Super Admin does NOT inherit college-level operational authority)
+    function isCollegeAdminOnly(collegeId) {
+      return isAuthenticated() && getUserRole() == 'college_admin' && getUserCollegeId() == collegeId;
+    }
+
     function isCollegeAdmin(collegeId) {
-      return isSuperAdmin() || (isAuthenticated() && getUserRole() == 'college_admin' && getUserCollegeId() == collegeId);
+      return isCollegeAdminOnly(collegeId);
     }
 
     function isFoodCourtStaff(collegeId) {
-      return isCollegeAdmin(collegeId) || (isAuthenticated() && getUserRole() == 'food_court_staff' && getUserCollegeId() == collegeId);
+      return isCollegeAdminOnly(collegeId) || (isAuthenticated() && getUserRole() == 'food_court_staff' && getUserCollegeId() == collegeId);
     }
 
     function isTeacherStaff(collegeId) {
-      return isCollegeAdmin(collegeId) || (isAuthenticated() && getUserRole() == 'teacher_staff' && getUserCollegeId() == collegeId);
+      return isCollegeAdminOnly(collegeId) || (isAuthenticated() && getUserRole() == 'teacher_staff' && getUserCollegeId() == collegeId);
     }
 
     function isStudent(collegeId) {
@@ -49,36 +54,56 @@ service cloud.firestore {
       allow write: if isSuperAdmin();
     }
 
-    // 2. User profiles
+    // 2. User profiles with strict institutional boundaries
     match /users/{userId} {
-      allow read: if isAuthenticated() && (request.auth.uid == userId || isCollegeAdmin(resource.data.collegeId) || isSuperAdmin());
-      allow create: if isAuthenticated() && request.auth.uid == userId;
-      allow update: if isAuthenticated() && (request.auth.uid == userId || isCollegeAdmin(resource.data.collegeId) || isSuperAdmin());
-      allow delete: if isSuperAdmin();
+      allow read: if isAuthenticated() && (
+        request.auth.uid == userId ||
+        isCollegeAdminOnly(resource.data.collegeId) ||
+        isSuperAdmin()
+      );
+
+      // Super Admin ONLY creates college admins; College Admin ONLY creates teacher & food court staff
+      allow create: if isAuthenticated() && (
+        (request.resource.data.role == 'college_admin' && isSuperAdmin()) ||
+        ((request.resource.data.role == 'teacher_staff' || request.resource.data.role == 'food_court_staff') && isCollegeAdminOnly(request.resource.data.collegeId)) ||
+        (request.resource.data.role == 'student' && request.auth.uid == userId)
+      );
+
+      allow update: if isAuthenticated() && (
+        (request.resource.data.role == 'college_admin' && isSuperAdmin()) ||
+        ((request.resource.data.role == 'teacher_staff' || request.resource.data.role == 'food_court_staff') && isCollegeAdminOnly(request.resource.data.collegeId)) ||
+        (request.auth.uid == userId && request.resource.data.role == resource.data.role)
+      );
+
+      // Super Admin can delete college admins; College Admin can delete staff
+      allow delete: if isAuthenticated() && (
+        (resource.data.role == 'college_admin' && isSuperAdmin()) ||
+        ((resource.data.role == 'teacher_staff' || resource.data.role == 'food_court_staff') && isCollegeAdminOnly(resource.data.collegeId))
+      );
     }
 
-    // 3. Buildings & Rooms
+    // 3. Buildings & Rooms (Exclusively governed by College Admin)
     match /rooms/{roomId} {
       allow read: if belongsToCollege(resource.data.collegeId);
-      allow write: if isCollegeAdmin(request.resource.data.collegeId);
+      allow write: if isCollegeAdminOnly(request.resource.data.collegeId);
     }
 
     // 4. Faculty
     match /faculty/{facultyId} {
       allow read: if belongsToCollege(resource.data.collegeId);
-      allow write: if isCollegeAdmin(request.resource.data.collegeId);
+      allow write: if isCollegeAdminOnly(request.resource.data.collegeId);
     }
 
     // 5. Timetable
     match /timetable/{slotId} {
       allow read: if belongsToCollege(resource.data.collegeId);
-      allow write: if isCollegeAdmin(request.resource.data.collegeId) || isTeacherStaff(request.resource.data.collegeId);
+      allow write: if isCollegeAdminOnly(request.resource.data.collegeId) || isTeacherStaff(request.resource.data.collegeId);
     }
 
-    // 6. 360° Campus Locations
+    // 6. 360° Campus Locations (Exclusively governed by College Admin; Super Admin CANNOT modify)
     match /campus360Locations/{locationId} {
       allow read: if belongsToCollege(resource.data.collegeId);
-      allow write: if isCollegeAdmin(request.resource.data.collegeId);
+      allow write: if isCollegeAdminOnly(request.resource.data.collegeId);
     }
 
     // 7. Food Courts & Food Items

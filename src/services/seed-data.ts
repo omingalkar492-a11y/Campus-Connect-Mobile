@@ -47,91 +47,23 @@ export const SEED_COLLEGES: College[] = [
   },
 ];
 
+export const SUPER_ADMIN_ACCOUNT: UserProfile = {
+  uid: 'super_admin_omkumar',
+  role: 'super_admin',
+  collegeId: 'all',
+  name: 'Omkumar Gajanan Ingalkar',
+  username: 'omkumar_01',
+  email: 'omkumaringalkar1234@gmail.com',
+  passwordHash: '@Aokgi1234ADMIN',
+  status: 'active',
+  createdAt: '2025-01-01T00:00:00Z',
+  designation: 'Chief Platform Administrator & Founder',
+};
+
+// Demo profiles removed per platform governance requirements
 export const DEMO_PROFILES: Record<string, UserProfile> = {
-  // 1. Student (Matches UI screenshots)
-  'student@jspm.edu': {
-    uid: 'demo_student_aarav',
-    role: 'student',
-    collegeId: 'col_jspm_tathawade',
-    name: 'Aarav Kulkarni',
-    email: 'student@jspm.edu',
-    status: 'active',
-    createdAt: '2026-01-10T00:00:00Z',
-    department: 'Information Technology',
-    year: '3rd Year',
-    division: 'Div A',
-    rollNumber: '3104',
-    studentId: 'JSPM-IT-2401',
-  },
-
-  // 2. College Admin
-  'admin@jspm.edu': {
-    uid: 'demo_admin_jspm',
-    role: 'college_admin',
-    collegeId: 'col_jspm_tathawade',
-    name: 'Dr. Rajesh Sharma',
-    email: 'admin@jspm.edu',
-    status: 'active',
-    createdAt: '2025-06-01T00:00:00Z',
-    designation: 'Dean of Academics & Campus Administrator',
-  },
-
-  // 3. Food Court Staff
-  'canteen@jspm.edu': {
-    uid: 'demo_canteen_suresh',
-    role: 'food_court_staff',
-    collegeId: 'col_jspm_tathawade',
-    name: 'Suresh Patil',
-    email: 'canteen@jspm.edu',
-    status: 'active',
-    createdAt: '2025-08-15T00:00:00Z',
-    assignedFoodCourtId: 'fc_jspm_main',
-    designation: 'Main Canteen Manager',
-    permissions: ['canteen_manager'],
-  },
-
-  // 4. Teacher / Staff
-  'faculty@jspm.edu': {
-    uid: 'demo_faculty_sneha',
-    role: 'teacher_staff',
-    collegeId: 'col_jspm_tathawade',
-    name: 'Prof. Sneha Deshmukh',
-    email: 'faculty@jspm.edu',
-    status: 'active',
-    createdAt: '2025-07-01T00:00:00Z',
-    department: 'Information Technology',
-    designation: 'Assistant Professor',
-    subjectsTaught: ['Database Management Systems', 'Advanced DBMS'],
-    isClassTeacher: true,
-    permissions: ['tour_360_curator', 'notices_publisher'],
-  },
-
-  // 5. Super Admin
-  'superadmin@campusconnect.in': {
-    uid: 'demo_super_admin',
-    role: 'super_admin',
-    collegeId: 'all',
-    name: 'Campus Connect Admin',
-    email: 'superadmin@campusconnect.in',
-    status: 'active',
-    createdAt: '2025-01-01T00:00:00Z',
-    designation: 'Lead Platform Architect',
-  },
-
-  // 6. Student from College B (COEP) to test strict tenant separation
-  'student@coep.edu': {
-    uid: 'demo_student_rohan',
-    role: 'student',
-    collegeId: 'col_coep_tech',
-    name: 'Rohan Mehra',
-    email: 'student@coep.edu',
-    status: 'active',
-    createdAt: '2026-02-15T00:00:00Z',
-    department: 'Computer Engineering',
-    year: '2nd Year',
-    division: 'Div B',
-    rollNumber: 'COEP-CS-204',
-  },
+  'omkumaringalkar1234@gmail.com': SUPER_ADMIN_ACCOUNT,
+  'omkumar_01': SUPER_ADMIN_ACCOUNT,
 };
 
 export const SEED_ROOMS: Room[] = [

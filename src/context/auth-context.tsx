@@ -9,7 +9,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 import { auth } from '@/lib/firebase';
 import { DataService } from '@/services/data-service';
-import { DEMO_PROFILES, SEED_COLLEGES } from '@/services/seed-data';
+import { DEMO_PROFILES, SEED_COLLEGES, SUPER_ADMIN_ACCOUNT } from '@/services/seed-data';
 import { UserProfile, College, UserRole } from '@/types';
 
 interface AuthContextType {
@@ -18,7 +18,7 @@ interface AuthContextType {
   college: College | null;
   role: UserRole | null;
   loading: boolean;
-  login: (email: string, pass: string) => Promise<void>;
+  login: (emailOrUsername: string, pass: string) => Promise<void>;
   signup: (
     email: string,
     pass: string,
@@ -36,8 +36,8 @@ const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<FirebaseUser | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(DEMO_PROFILES['student@jspm.edu']);
-  const [college, setCollege] = useState<College | null>(SEED_COLLEGES[0]);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [college, setCollege] = useState<College | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   // Load college and profile
@@ -63,12 +63,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (p) {
             await syncProfileAndCollege(p);
           }
-        } else {
-          // If no active Firebase user, ensure demo student state is active
-          if (!profile) {
-            const defaultProfile = DEMO_PROFILES['student@jspm.edu'];
-            await syncProfileAndCollege(defaultProfile);
-          }
         }
       } catch (err) {
         console.error('Auth sync error:', err);
@@ -80,29 +74,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const login = async (email: string, pass: string) => {
+  const login = async (emailOrUsername: string, pass: string) => {
     setLoading(true);
     try {
-      const cleanEmail = email.toLowerCase().trim();
+      const cleanId = emailOrUsername.toLowerCase().trim();
       const cleanPass = pass.trim();
 
-      if (!cleanEmail || !cleanPass) {
-        throw new Error('Please enter both email and password.');
+      if (!cleanId || !cleanPass) {
+        throw new Error('Please enter both identifier (email/username) and password.');
       }
 
-      // Check if it's one of the demo test credentials
-      if (DEMO_PROFILES[cleanEmail]) {
-        const demoUser = DEMO_PROFILES[cleanEmail];
-        await syncProfileAndCollege(demoUser);
+      // 1. Check institutional credentials (Super Admin Omkumar & College Admins created by Super Admin)
+      const institutionalProfile = await DataService.authenticateCredentials(cleanId, cleanPass);
+      if (institutionalProfile) {
+        await syncProfileAndCollege(institutionalProfile);
         setLoading(false);
         return;
       }
 
-      const res = await signInWithEmailAndPassword(auth, cleanEmail, cleanPass);
-      setUser(res.user);
-      const p = await DataService.getUserProfile(res.user.uid, res.user.email || cleanEmail);
-      if (p) {
-        await syncProfileAndCollege(p);
+      // 2. Authenticate student via Firebase Auth
+      try {
+        const res = await signInWithEmailAndPassword(auth, cleanId, cleanPass);
+        setUser(res.user);
+        const p = await DataService.getUserProfile(res.user.uid, res.user.email || cleanId);
+        if (p) {
+          await syncProfileAndCollege(p);
+        }
+      } catch (fbErr: any) {
+        if (!cleanId.includes('@')) {
+          throw new Error('Invalid username or password.');
+        }
+        throw fbErr;
       }
     } finally {
       setLoading(false);
@@ -166,15 +168,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const switchDemoRole = async (emailOrRole: string) => {
     setLoading(true);
     try {
-      let targetProfile = DEMO_PROFILES[emailOrRole.toLowerCase().trim()];
-      if (!targetProfile) {
-        // Find by role
-        const match = Object.values(DEMO_PROFILES).find(
-          (p) => p.role.toLowerCase() === emailOrRole.toLowerCase()
-        );
-        if (match) targetProfile = match;
+      const clean = emailOrRole.toLowerCase().trim();
+      let targetProfile = DEMO_PROFILES[clean];
+      if (
+        !targetProfile &&
+        (clean === 'super_admin' ||
+          clean === 'superadmin' ||
+          clean === SUPER_ADMIN_ACCOUNT.email.toLowerCase() ||
+          clean === SUPER_ADMIN_ACCOUNT.username?.toLowerCase())
+      ) {
+        targetProfile = SUPER_ADMIN_ACCOUNT;
       }
-
       if (targetProfile) {
         await syncProfileAndCollege(targetProfile);
       }

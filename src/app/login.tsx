@@ -19,7 +19,7 @@ import { SEED_COLLEGES } from '@/services/seed-data';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { login, signup, switchDemoRole, loading: authLoading } = useAuth();
+  const { login, signup, loading: authLoading } = useAuth();
   const { colors, isDark } = useAppTheme();
 
   const [activeTab, setActiveTab] = useState<'student' | 'staff'>('student');
@@ -93,19 +93,6 @@ export default function LoginScreen() {
       }
     } catch (err: any) {
       setErrorMsg(getFriendlyAuthError(err));
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleDemoLogin = async (demoEmail: string) => {
-    setErrorMsg('');
-    setSubmitting(true);
-    try {
-      await switchDemoRole(demoEmail);
-      router.replace('/' as any);
-    } catch (err: any) {
-      setErrorMsg(err?.message || 'Demo sign-in failed');
     } finally {
       setSubmitting(false);
     }
@@ -247,14 +234,18 @@ export default function LoginScreen() {
         )}
 
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Campus Email Address</Text>
+          <Text style={styles.inputLabel}>
+            {activeTab === 'student' ? 'Campus Email Address' : 'Admin Email or Username'}
+          </Text>
           <TextInput
             style={styles.input}
             placeholder={
-              activeTab === 'student' ? 'student@jspm.edu' : 'admin@jspm.edu'
+              activeTab === 'student'
+                ? 'e.g. student@jspm.edu'
+                : 'omkumaringalkar1234@gmail.com or omkumar_01'
             }
             placeholderTextColor={CampusTheme.colors.textDim}
-            keyboardType="email-address"
+            keyboardType={activeTab === 'student' ? 'email-address' : 'default'}
             autoCapitalize="none"
             value={email}
             onChangeText={setEmail}
@@ -307,67 +298,19 @@ export default function LoginScreen() {
           </Pressable>
         )}
 
-        {/* Quick Demo Access Bar */}
-        <View style={styles.demoSection}>
-          <View style={styles.dividerRow}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>ONE-TAP DEMO PROFILES</Text>
-            <View style={styles.dividerLine} />
+        {activeTab === 'staff' && (
+          <View style={styles.staffNoticeBox}>
+            <View style={styles.staffNoticeIcon}>
+              <Ionicons name="shield-checkmark" size={16} color={CampusTheme.colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.staffNoticeTitle}>Platform Institutional Security</Text>
+              <Text style={styles.staffNoticeText}>
+                Super Admin has exclusive authority over College Admin IDs. College Admin accounts are provisioned directly by the Super Admin.
+              </Text>
+            </View>
           </View>
-          <Text style={styles.demoSubtext}>
-            Test each institutional role instantly with realistic live data:
-          </Text>
-
-          <View style={styles.demoPillsContainer}>
-            <Pressable
-              style={styles.demoPill}
-              onPress={() => handleDemoLogin('student@jspm.edu')}
-            >
-              <Ionicons name="school" size={14} color={CampusTheme.colors.primary} />
-              <Text style={styles.demoPillText}>Student (Aarav - JSPM)</Text>
-            </Pressable>
-
-            <Pressable
-              style={styles.demoPill}
-              onPress={() => handleDemoLogin('admin@jspm.edu')}
-            >
-              <Ionicons name="business" size={14} color={CampusTheme.colors.warning} />
-              <Text style={styles.demoPillText}>College Admin (JSPM)</Text>
-            </Pressable>
-
-            <Pressable
-              style={styles.demoPill}
-              onPress={() => handleDemoLogin('canteen@jspm.edu')}
-            >
-              <Ionicons name="fast-food" size={14} color="#F472B6" />
-              <Text style={styles.demoPillText}>Food Court Staff (Suresh)</Text>
-            </Pressable>
-
-            <Pressable
-              style={styles.demoPill}
-              onPress={() => handleDemoLogin('faculty@jspm.edu')}
-            >
-              <Ionicons name="person-circle" size={14} color="#60A5FA" />
-              <Text style={styles.demoPillText}>Faculty (Sneha Deshmukh)</Text>
-            </Pressable>
-
-            <Pressable
-              style={styles.demoPill}
-              onPress={() => handleDemoLogin('superadmin@campusconnect.in')}
-            >
-              <Ionicons name="planet" size={14} color="#A78BFA" />
-              <Text style={styles.demoPillText}>Super Admin (Platform)</Text>
-            </Pressable>
-
-            <Pressable
-              style={[styles.demoPill, { borderColor: 'rgba(255, 255, 255, 0.2)' }]}
-              onPress={() => handleDemoLogin('student@coep.edu')}
-            >
-              <Ionicons name="shield" size={14} color="#34D399" />
-              <Text style={styles.demoPillText}>COEP Student (College B)</Text>
-            </Pressable>
-          </View>
-        </View>
+        )}
       </View>
     </ScrollView>
   );
@@ -551,55 +494,29 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
-  demoSection: {
-    marginTop: 10,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.07)',
-  },
-  dividerRow: {
+  staffNoticeBox: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-  },
-  dividerText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: CampusTheme.colors.textDim,
-    marginHorizontal: 10,
-    letterSpacing: 1,
-  },
-  demoSubtext: {
-    fontSize: 12,
-    color: CampusTheme.colors.textMuted,
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  demoPillsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    justifyContent: 'center',
-  },
-  demoPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 9999,
-    backgroundColor: '#0F1A14',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginTop: 18,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: '#0F1E17',
     borderWidth: 1,
-    borderColor: CampusTheme.colors.cardBorder,
+    borderColor: 'rgba(142, 228, 175, 0.15)',
   },
-  demoPillText: {
+  staffNoticeIcon: {
+    marginTop: 2,
+  },
+  staffNoticeTitle: {
     fontSize: 12,
-    color: CampusTheme.colors.text,
-    fontWeight: '600',
+    fontWeight: '800',
+    color: CampusTheme.colors.primary,
+    marginBottom: 2,
+  },
+  staffNoticeText: {
+    fontSize: 11,
+    color: CampusTheme.colors.textMuted,
+    lineHeight: 16,
   },
 });
