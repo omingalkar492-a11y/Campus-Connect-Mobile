@@ -4,12 +4,8 @@ import {
   doc,
   getDoc,
   getDocs,
-  query,
-  where,
   setDoc,
   updateDoc,
-  addDoc,
-  orderBy,
   deleteDoc,
 } from 'firebase/firestore';
 import { Platform } from 'react-native';
@@ -27,6 +23,8 @@ import {
   DEMO_PROFILES,
   SUPER_ADMIN_ACCOUNT,
   SEED_PAYOUT_CONFIGS,
+  SEED_DEPARTMENTS,
+  SEED_CANTEEN_OWNER,
 } from './seed-data';
 import {
   College,
@@ -43,6 +41,7 @@ import {
   StaffPermission,
   FoodCourtPayoutConfig,
   UserRole,
+  Department,
 } from '@/types';
 
 // In-memory runtime cache/store to ensure snappy UI and offline/demo resilience
@@ -50,9 +49,16 @@ let runtimeOrders: Order[] = [{ ...SEED_ACTIVE_ORDER }];
 let runtimeFoodItems: FoodItem[] = [...SEED_FOOD_ITEMS];
 let runtime360Locations: Campus360Location[] = [...SEED_360_LOCATIONS];
 let runtimeRooms: Room[] = [...SEED_ROOMS];
+let runtimeFaculty: Faculty[] = [...SEED_FACULTY];
 let runtimeNotices: Notice[] = [...SEED_NOTICES];
+let runtimeDepartments: Department[] = [...SEED_DEPARTMENTS];
 let runtimeUsers: Record<string, UserProfile> = {};
 let runtimeCollegeAdmins: Record<string, UserProfile> = {};
+let runtimeCanteenOwners: Record<string, UserProfile> = {
+  [SEED_CANTEEN_OWNER.uid]: SEED_CANTEEN_OWNER,
+  [SEED_CANTEEN_OWNER.username!.toLowerCase()]: SEED_CANTEEN_OWNER,
+  [SEED_CANTEEN_OWNER.email!.toLowerCase()]: SEED_CANTEEN_OWNER,
+};
 let runtimePayoutConfigs: Record<string, FoodCourtPayoutConfig> = { ...SEED_PAYOUT_CONFIGS };
 let otpAttempts: Record<string, number> = {};
 
@@ -62,6 +68,11 @@ const FOOD_ITEMS_STORAGE_KEY = 'cc_food_items';
 const LOCATIONS_360_STORAGE_KEY = 'cc_360_locations';
 const PAYOUT_CONFIGS_STORAGE_KEY = 'cc_payout_configs';
 const ORDERS_STORAGE_KEY = 'cc_orders';
+const ROOMS_STORAGE_KEY = 'cc_rooms';
+const FACULTY_STORAGE_KEY = 'cc_faculty';
+const NOTICES_STORAGE_KEY = 'cc_notices';
+const DEPARTMENTS_STORAGE_KEY = 'cc_departments';
+const CANTEEN_OWNERS_STORAGE_KEY = 'cc_canteen_owners';
 
 const saveToStorage = async (key: string, data: any) => {
   try {
@@ -100,6 +111,45 @@ const saveToStorage = async (key: string, data: any) => {
       const parsedAdmins = JSON.parse(adminsRaw);
       Object.assign(runtimeCollegeAdmins, parsedAdmins);
       Object.assign(runtimeUsers, parsedAdmins);
+    }
+
+    const canteenOwnersRaw = await readStorage(CANTEEN_OWNERS_STORAGE_KEY);
+    if (canteenOwnersRaw) {
+      const parsedOwners = JSON.parse(canteenOwnersRaw);
+      Object.assign(runtimeCanteenOwners, parsedOwners);
+      Object.assign(runtimeUsers, parsedOwners);
+    }
+
+    const roomsRaw = await readStorage(ROOMS_STORAGE_KEY);
+    if (roomsRaw) {
+      const parsedRooms = JSON.parse(roomsRaw);
+      if (Array.isArray(parsedRooms) && parsedRooms.length > 0) {
+        runtimeRooms = parsedRooms;
+      }
+    }
+
+    const facultyRaw = await readStorage(FACULTY_STORAGE_KEY);
+    if (facultyRaw) {
+      const parsedFaculty = JSON.parse(facultyRaw);
+      if (Array.isArray(parsedFaculty) && parsedFaculty.length > 0) {
+        runtimeFaculty = parsedFaculty;
+      }
+    }
+
+    const deptsRaw = await readStorage(DEPARTMENTS_STORAGE_KEY);
+    if (deptsRaw) {
+      const parsedDepts = JSON.parse(deptsRaw);
+      if (Array.isArray(parsedDepts) && parsedDepts.length > 0) {
+        runtimeDepartments = parsedDepts;
+      }
+    }
+
+    const noticesRaw = await readStorage(NOTICES_STORAGE_KEY);
+    if (noticesRaw) {
+      const parsedNotices = JSON.parse(noticesRaw);
+      if (Array.isArray(parsedNotices) && parsedNotices.length > 0) {
+        runtimeNotices = parsedNotices;
+      }
     }
 
     const foodRaw = await readStorage(FOOD_ITEMS_STORAGE_KEY);
@@ -291,13 +341,17 @@ export const DataService = {
     }
   },
 
-  // 3. Rooms & Search (Multi-tenant scoped)
+  // 3. Rooms & Search (Multi-tenant scoped, full College Admin CRUD)
   async getRooms(collegeId: string, searchQuery?: string, filterType?: string): Promise<Room[]> {
     let list = runtimeRooms.filter((r) => r.collegeId === collegeId);
 
     if (filterType && filterType !== 'All') {
       const targetType = filterType.toLowerCase();
-      list = list.filter((r) => r.type.toLowerCase().includes(targetType));
+      list = list.filter(
+        (r) =>
+          r.type.toLowerCase().includes(targetType) ||
+          r.department.toLowerCase() === targetType
+      );
     }
 
     if (searchQuery && searchQuery.trim()) {
@@ -308,16 +362,95 @@ export const DataService = {
           r.roomNumber.toLowerCase().includes(q) ||
           r.department.toLowerCase().includes(q) ||
           r.description.toLowerCase().includes(q) ||
-          r.buildingName.toLowerCase().includes(q)
+          r.buildingName.toLowerCase().includes(q) ||
+          (r.departmentTeacher && r.departmentTeacher.toLowerCase().includes(q))
       );
     }
 
     return list;
   },
 
-  // 4. Faculty
+  async addRoom(room: Room, actorRole?: UserRole): Promise<Room> {
+    if (actorRole && actorRole !== 'college_admin') {
+      throw new Error('Security Violation: Only College Admin is authorized to add campus rooms.');
+    }
+    runtimeRooms.unshift(room);
+    await saveToStorage(ROOMS_STORAGE_KEY, runtimeRooms);
+    try {
+      await withTimeout(setDoc(doc(db, 'rooms', room.id), room), 1500);
+    } catch {}
+    return room;
+  },
+
+  async updateRoom(roomId: string, updates: Partial<Room>, actorRole?: UserRole): Promise<Room> {
+    if (actorRole && actorRole !== 'college_admin') {
+      throw new Error('Security Violation: Only College Admin is authorized to edit campus rooms.');
+    }
+    const idx = runtimeRooms.findIndex((r) => r.id === roomId);
+    if (idx === -1) throw new Error(`Room ${roomId} not found`);
+    runtimeRooms[idx] = { ...runtimeRooms[idx], ...updates };
+    await saveToStorage(ROOMS_STORAGE_KEY, runtimeRooms);
+    try {
+      await withTimeout(updateDoc(doc(db, 'rooms', roomId), updates), 1500);
+    } catch {}
+    return runtimeRooms[idx];
+  },
+
+  async deleteRoom(roomId: string, actorRole?: UserRole): Promise<void> {
+    if (actorRole && actorRole !== 'college_admin') {
+      throw new Error('Security Violation: Only College Admin is authorized to delete campus rooms.');
+    }
+    runtimeRooms = runtimeRooms.filter((r) => r.id !== roomId);
+    await saveToStorage(ROOMS_STORAGE_KEY, runtimeRooms);
+    try {
+      await withTimeout(deleteDoc(doc(db, 'rooms', roomId)), 1500);
+    } catch {}
+  },
+
+  // 3b. Departments (Full College Admin CRUD)
+  async getDepartments(collegeId: string): Promise<Department[]> {
+    return runtimeDepartments.filter((d) => d.collegeId === collegeId);
+  },
+
+  async addDepartment(collegeId: string, departmentName: string, actorRole?: UserRole): Promise<Department> {
+    if (actorRole && actorRole !== 'college_admin') {
+      throw new Error('Security Violation: Only College Admin is authorized to add departments.');
+    }
+    const cleanName = departmentName.trim();
+    if (!cleanName) throw new Error('Department name cannot be empty.');
+    const existing = runtimeDepartments.find(
+      (d) => d.collegeId === collegeId && d.name.toLowerCase() === cleanName.toLowerCase()
+    );
+    if (existing) throw new Error(`Department "${cleanName}" already exists.`);
+
+    const newDept: Department = {
+      id: `dept_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      collegeId,
+      name: cleanName,
+      code: cleanName.substring(0, 4).toUpperCase(),
+    };
+    runtimeDepartments.push(newDept);
+    await saveToStorage(DEPARTMENTS_STORAGE_KEY, runtimeDepartments);
+    try {
+      await withTimeout(setDoc(doc(db, 'departments', newDept.id), newDept), 1500);
+    } catch {}
+    return newDept;
+  },
+
+  async deleteDepartment(deptId: string, actorRole?: UserRole): Promise<void> {
+    if (actorRole && actorRole !== 'college_admin') {
+      throw new Error('Security Violation: Only College Admin is authorized to delete departments.');
+    }
+    runtimeDepartments = runtimeDepartments.filter((d) => d.id !== deptId);
+    await saveToStorage(DEPARTMENTS_STORAGE_KEY, runtimeDepartments);
+    try {
+      await withTimeout(deleteDoc(doc(db, 'departments', deptId)), 1500);
+    } catch {}
+  },
+
+  // 4. Faculty (Full College Admin CRUD)
   async getFaculty(collegeId: string, searchQuery?: string): Promise<Faculty[]> {
-    let list = SEED_FACULTY.filter((f) => f.collegeId === collegeId);
+    let list = runtimeFaculty.filter((f) => f.collegeId === collegeId);
 
     if (searchQuery && searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
@@ -326,11 +459,49 @@ export const DataService = {
           f.name.toLowerCase().includes(q) ||
           f.department.toLowerCase().includes(q) ||
           f.designation.toLowerCase().includes(q) ||
+          (f.phone && f.phone.toLowerCase().includes(q)) ||
           f.subjects.some((s) => s.toLowerCase().includes(q))
       );
     }
 
     return list;
+  },
+
+  async addFaculty(fac: Faculty, actorRole?: UserRole): Promise<Faculty> {
+    if (actorRole && actorRole !== 'college_admin') {
+      throw new Error('Security Violation: Only College Admin is authorized to add faculty members.');
+    }
+    runtimeFaculty.unshift(fac);
+    await saveToStorage(FACULTY_STORAGE_KEY, runtimeFaculty);
+    try {
+      await withTimeout(setDoc(doc(db, 'faculty', fac.id), fac), 1500);
+    } catch {}
+    return fac;
+  },
+
+  async updateFaculty(facultyId: string, updates: Partial<Faculty>, actorRole?: UserRole): Promise<Faculty> {
+    if (actorRole && actorRole !== 'college_admin') {
+      throw new Error('Security Violation: Only College Admin is authorized to edit faculty members.');
+    }
+    const idx = runtimeFaculty.findIndex((f) => f.id === facultyId);
+    if (idx === -1) throw new Error(`Faculty ${facultyId} not found`);
+    runtimeFaculty[idx] = { ...runtimeFaculty[idx], ...updates };
+    await saveToStorage(FACULTY_STORAGE_KEY, runtimeFaculty);
+    try {
+      await withTimeout(updateDoc(doc(db, 'faculty', facultyId), updates), 1500);
+    } catch {}
+    return runtimeFaculty[idx];
+  },
+
+  async deleteFaculty(facultyId: string, actorRole?: UserRole): Promise<void> {
+    if (actorRole && actorRole !== 'college_admin') {
+      throw new Error('Security Violation: Only College Admin is authorized to delete faculty members.');
+    }
+    runtimeFaculty = runtimeFaculty.filter((f) => f.id !== facultyId);
+    await saveToStorage(FACULTY_STORAGE_KEY, runtimeFaculty);
+    try {
+      await withTimeout(deleteDoc(doc(db, 'faculty', facultyId)), 1500);
+    } catch {}
   },
 
   // 5. Timetable
@@ -804,9 +975,46 @@ export const DataService = {
     return updatedOrder;
   },
 
-  // 13. Notices & Updates
+  // 13. Notices & Updates (Full College Admin CRUD)
   async getNotices(collegeId: string): Promise<Notice[]> {
     return runtimeNotices.filter((n) => n.collegeId === collegeId);
+  },
+
+  async addNotice(notice: Notice, actorRole?: UserRole): Promise<Notice> {
+    if (actorRole && actorRole !== 'college_admin') {
+      throw new Error('Security Violation: Only College Admin is authorized to publish notices.');
+    }
+    runtimeNotices.unshift(notice);
+    await saveToStorage(NOTICES_STORAGE_KEY, runtimeNotices);
+    try {
+      await withTimeout(setDoc(doc(db, 'notices', notice.id), notice), 1500);
+    } catch {}
+    return notice;
+  },
+
+  async updateNotice(noticeId: string, updates: Partial<Notice>, actorRole?: UserRole): Promise<Notice> {
+    if (actorRole && actorRole !== 'college_admin') {
+      throw new Error('Security Violation: Only College Admin is authorized to edit notices.');
+    }
+    const idx = runtimeNotices.findIndex((n) => n.id === noticeId);
+    if (idx === -1) throw new Error(`Notice ${noticeId} not found`);
+    runtimeNotices[idx] = { ...runtimeNotices[idx], ...updates };
+    await saveToStorage(NOTICES_STORAGE_KEY, runtimeNotices);
+    try {
+      await withTimeout(updateDoc(doc(db, 'notices', noticeId), updates), 1500);
+    } catch {}
+    return runtimeNotices[idx];
+  },
+
+  async deleteNotice(noticeId: string, actorRole?: UserRole): Promise<void> {
+    if (actorRole && actorRole !== 'college_admin') {
+      throw new Error('Security Violation: Only College Admin is authorized to delete notices.');
+    }
+    runtimeNotices = runtimeNotices.filter((n) => n.id !== noticeId);
+    await saveToStorage(NOTICES_STORAGE_KEY, runtimeNotices);
+    try {
+      await withTimeout(deleteDoc(doc(db, 'notices', noticeId)), 1500);
+    } catch {}
   },
 
   // 14. Staff & Field Admin Permission Delegation
@@ -986,6 +1194,149 @@ export const DataService = {
     } catch {}
   },
 
+  // 15b. Canteen Owners / Food Court Account Authority (Exclusively Governed by College Admin)
+  async getCanteenOwners(collegeId?: string): Promise<UserProfile[]> {
+    const list: UserProfile[] = [];
+    const seen = new Set<string>();
+
+    const checkAndAdd = (u: UserProfile) => {
+      if (u.role === 'food_court_staff' && !seen.has(u.uid)) {
+        if (!collegeId || u.collegeId === collegeId || u.collegeId === 'all') {
+          seen.add(u.uid);
+          list.push(u);
+        }
+      }
+    };
+
+    Object.values(runtimeCanteenOwners).forEach(checkAndAdd);
+    Object.values(runtimeUsers).forEach(checkAndAdd);
+
+    return list;
+  },
+
+  async addCanteenOwner(
+    ownerData: {
+      name: string;
+      username: string;
+      password: string;
+      phone: string;
+      collegeId: string;
+      assignedFoodCourtId?: string;
+    },
+    actorRole?: UserRole
+  ): Promise<UserProfile> {
+    if (actorRole && actorRole !== 'college_admin') {
+      throw new Error('Security Violation: Only College Admin is authorized to create Canteen Owner accounts.');
+    }
+
+    const cleanUsername = ownerData.username.toLowerCase().trim();
+    const cleanName = ownerData.name.trim();
+    const cleanPassword = ownerData.password.trim();
+    const cleanPhone = ownerData.phone.trim();
+
+    if (!cleanUsername || !cleanPassword || !cleanName || !cleanPhone) {
+      throw new Error('Please provide name, username/ID, password, and mobile number.');
+    }
+
+    if (cleanPassword.length < 6) {
+      throw new Error('Password must be at least 6 characters long.');
+    }
+
+    const email = `${cleanUsername.replace(/[^a-z0-9]/g, '')}@canteen.campus`;
+
+    const newOwner: UserProfile = {
+      uid: `canteen_owner_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      role: 'food_court_staff',
+      collegeId: ownerData.collegeId,
+      name: cleanName,
+      username: cleanUsername,
+      email,
+      phone: cleanPhone,
+      passwordHash: cleanPassword,
+      designation: 'Food Court Owner & Licensee',
+      assignedFoodCourtId: ownerData.assignedFoodCourtId || 'fc_jspm_main',
+      status: 'active',
+      createdAt: new Date().toISOString(),
+      createdBy: 'college_admin',
+      permissions: ['canteen_manager'],
+    };
+
+    runtimeCanteenOwners[newOwner.uid] = newOwner;
+    runtimeCanteenOwners[cleanUsername] = newOwner;
+    runtimeCanteenOwners[email] = newOwner;
+    runtimeUsers[newOwner.uid] = newOwner;
+    runtimeUsers[cleanUsername] = newOwner;
+    runtimeUsers[email] = newOwner;
+
+    await saveToStorage(CANTEEN_OWNERS_STORAGE_KEY, runtimeCanteenOwners);
+    await saveToStorage(USERS_STORAGE_KEY, runtimeUsers);
+
+    try {
+      await withTimeout(setDoc(doc(db, 'users', newOwner.uid), newOwner), 1500);
+    } catch {}
+
+    return newOwner;
+  },
+
+  async updateCanteenOwner(
+    uid: string,
+    updates: Partial<UserProfile>,
+    actorRole?: UserRole
+  ): Promise<UserProfile> {
+    if (actorRole && actorRole !== 'college_admin') {
+      throw new Error('Security Violation: Only College Admin is authorized to update Canteen Owner accounts.');
+    }
+
+    const existing = runtimeCanteenOwners[uid] || runtimeUsers[uid];
+    if (!existing) throw new Error(`Canteen Owner ${uid} not found`);
+
+    const updated: UserProfile = {
+      ...existing,
+      ...updates,
+    };
+
+    runtimeCanteenOwners[uid] = updated;
+    if (updated.username) runtimeCanteenOwners[updated.username.toLowerCase()] = updated;
+    if (updated.email) runtimeCanteenOwners[updated.email.toLowerCase()] = updated;
+    runtimeUsers[uid] = updated;
+    if (updated.username) runtimeUsers[updated.username.toLowerCase()] = updated;
+    if (updated.email) runtimeUsers[updated.email.toLowerCase()] = updated;
+
+    await saveToStorage(CANTEEN_OWNERS_STORAGE_KEY, runtimeCanteenOwners);
+    await saveToStorage(USERS_STORAGE_KEY, runtimeUsers);
+
+    try {
+      await withTimeout(updateDoc(doc(db, 'users', uid), updates), 1500);
+    } catch {}
+
+    return updated;
+  },
+
+  async deleteCanteenOwner(uid: string, actorRole?: UserRole): Promise<void> {
+    if (actorRole && actorRole !== 'college_admin') {
+      throw new Error('Security Violation: Only College Admin is authorized to delete Canteen Owner accounts.');
+    }
+
+    const owner = runtimeCanteenOwners[uid] || runtimeUsers[uid];
+    delete runtimeCanteenOwners[uid];
+    delete runtimeUsers[uid];
+    if (owner?.username) {
+      delete runtimeCanteenOwners[owner.username.toLowerCase()];
+      delete runtimeUsers[owner.username.toLowerCase()];
+    }
+    if (owner?.email) {
+      delete runtimeCanteenOwners[owner.email.toLowerCase()];
+      delete runtimeUsers[owner.email.toLowerCase()];
+    }
+
+    await saveToStorage(CANTEEN_OWNERS_STORAGE_KEY, runtimeCanteenOwners);
+    await saveToStorage(USERS_STORAGE_KEY, runtimeUsers);
+
+    try {
+      await withTimeout(deleteDoc(doc(db, 'users', uid)), 1500);
+    } catch {}
+  },
+
   // 16. Unified Institutional Credential Authenticator
   async authenticateCredentials(
     identifier: string,
@@ -1025,6 +1376,30 @@ export const DataService = {
         return matchedAdmin;
       }
       throw new Error('Incorrect password for College Admin account.');
+    }
+
+    // 3. Canteen Owner / Food Court Staff Authentication (Created by College Admin)
+    const matchedCanteenOwner =
+      runtimeCanteenOwners[cleanId] ||
+      Object.values(runtimeCanteenOwners).find(
+        (o) =>
+          o.username?.toLowerCase() === cleanId ||
+          o.email?.toLowerCase() === cleanId ||
+          (o.phone && o.phone.replace(/[\s+-]/g, '') === cleanId.replace(/[\s+-]/g, ''))
+      ) ||
+      Object.values(runtimeUsers).find(
+        (u) =>
+          u.role === 'food_court_staff' &&
+          (u.username?.toLowerCase() === cleanId ||
+            u.email?.toLowerCase() === cleanId ||
+            (u.phone && u.phone.replace(/[\s+-]/g, '') === cleanId.replace(/[\s+-]/g, '')))
+      );
+
+    if (matchedCanteenOwner) {
+      if (matchedCanteenOwner.passwordHash && matchedCanteenOwner.passwordHash === cleanPass) {
+        return matchedCanteenOwner;
+      }
+      throw new Error('Incorrect password for Canteen Owner account.');
     }
 
     return null;

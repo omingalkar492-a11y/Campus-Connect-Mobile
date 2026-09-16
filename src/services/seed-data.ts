@@ -9,6 +9,7 @@ import {
   Order,
   UserProfile,
   FoodCourtPayoutConfig,
+  Department,
 } from '@/types';
 
 export const SEED_COLLEGES: College[] = [
@@ -60,11 +61,38 @@ export const SUPER_ADMIN_ACCOUNT: UserProfile = {
   designation: 'Chief Platform Administrator & Founder',
 };
 
-// Demo profiles removed per platform governance requirements
+// Initial Seed Food Court Owner for JSPM
+export const SEED_CANTEEN_OWNER: UserProfile = {
+  uid: 'canteen_owner_suresh',
+  role: 'food_court_staff',
+  collegeId: 'col_jspm_tathawade',
+  name: 'Suresh Patil',
+  username: 'suresh_canteen',
+  email: 'suresh.patil@jspm.edu',
+  phone: '+91 98765 43210',
+  passwordHash: 'canteen123',
+  status: 'active',
+  createdAt: '2025-01-01T00:00:00Z',
+  designation: 'Central Food Court Owner & Licensee',
+  assignedFoodCourtId: 'fc_jspm_main',
+  permissions: ['canteen_manager'],
+};
+
 export const DEMO_PROFILES: Record<string, UserProfile> = {
   'omkumaringalkar1234@gmail.com': SUPER_ADMIN_ACCOUNT,
   'omkumar_01': SUPER_ADMIN_ACCOUNT,
+  'suresh_canteen': SEED_CANTEEN_OWNER,
+  'suresh.patil@jspm.edu': SEED_CANTEEN_OWNER,
 };
+
+export const SEED_DEPARTMENTS: Department[] = [
+  { id: 'dept_it', collegeId: 'col_jspm_tathawade', name: 'Information Technology', code: 'IT' },
+  { id: 'dept_cs', collegeId: 'col_jspm_tathawade', name: 'Computer Science', code: 'CS' },
+  { id: 'dept_mech', collegeId: 'col_jspm_tathawade', name: 'Mechanical Engineering', code: 'MECH' },
+  { id: 'dept_entc', collegeId: 'col_jspm_tathawade', name: 'Electronics & Telecom', code: 'ENTC' },
+  { id: 'dept_civil', collegeId: 'col_jspm_tathawade', name: 'Civil Engineering', code: 'CIVIL' },
+  { id: 'dept_gen', collegeId: 'col_jspm_tathawade', name: 'General', code: 'GEN' },
+];
 
 export const SEED_ROOMS: Room[] = [
   {
@@ -80,6 +108,9 @@ export const SEED_ROOMS: Room[] = [
     capacity: 70,
     description: 'Bright collaborative classroom near the east stairwell.',
     location360Id: 'loc_360_it204',
+    departmentTeacher: 'Prof. Sneha Deshmukh',
+    teacherPhone: '+91 98230 11223',
+    teacherEmail: 'sneha.deshmukh@jspm.edu',
   },
   {
     id: 'room_dbms_lab',
@@ -94,6 +125,9 @@ export const SEED_ROOMS: Room[] = [
     capacity: 45,
     description: 'High-performance database & systems lab with dual monitors and GPU clusters.',
     location360Id: 'loc_360_dbms',
+    departmentTeacher: 'Prof. Sneha Deshmukh',
+    teacherPhone: '+91 98230 11223',
+    teacherEmail: 'sneha.deshmukh@jspm.edu',
   },
   {
     id: 'room_central_lib',
@@ -108,6 +142,9 @@ export const SEED_ROOMS: Room[] = [
     capacity: 250,
     description: 'Quiet study zones, high-speed research terminals, and IEEE digital repository.',
     location360Id: 'loc_360_lib',
+    departmentTeacher: 'Dr. Mohan Rao',
+    teacherPhone: '+91 98222 33445',
+    teacherEmail: 'mohan.rao@jspm.edu',
   },
   {
     id: 'room_auditorium',
@@ -122,6 +159,9 @@ export const SEED_ROOMS: Room[] = [
     capacity: 850,
     description: 'Acoustically treated auditorium for keynote addresses, tech symposiums and convocations.',
     location360Id: 'loc_360_aud',
+    departmentTeacher: 'Prof. Vikram Joshi',
+    teacherPhone: '+91 98225 77889',
+    teacherEmail: 'vikram.joshi@jspm.edu',
   },
   {
     id: 'room_canteen',
@@ -135,6 +175,9 @@ export const SEED_ROOMS: Room[] = [
     department: 'Hospitality',
     capacity: 300,
     description: 'Spacious food court serving fresh hot snacks, meals, and beverages.',
+    departmentTeacher: 'Suresh Patil',
+    teacherPhone: '+91 98765 43210',
+    teacherEmail: 'suresh.canteen@jspm.edu',
   },
   {
     id: 'room_ai_lab',
@@ -149,6 +192,9 @@ export const SEED_ROOMS: Room[] = [
     capacity: 40,
     description: 'Hardware prototyping kits, NVIDIA RTX workstations, and robotics arena.',
     location360Id: 'loc_360_ai',
+    departmentTeacher: 'Dr. Rajesh Sharma',
+    teacherPhone: '+91 98220 44556',
+    teacherEmail: 'rajesh.sharma@jspm.edu',
   },
   {
     id: 'room_hod_it',
@@ -162,6 +208,9 @@ export const SEED_ROOMS: Room[] = [
     department: 'Information Technology',
     capacity: 10,
     description: 'Departmental administration and student counseling office.',
+    departmentTeacher: 'Dr. Rajesh Sharma',
+    teacherPhone: '+91 98220 44556',
+    teacherEmail: 'rajesh.sharma@jspm.edu',
   },
   // COEP Room to test isolation
   {
@@ -175,6 +224,9 @@ export const SEED_ROOMS: Room[] = [
     type: 'Auditorium',
     department: 'General',
     description: 'Historic assembly hall facing Mula river.',
+    departmentTeacher: 'Dr. P. V. Kulkarni',
+    teacherPhone: '+91 98221 12345',
+    teacherEmail: 'pvk@coep.ac.in',
   },
 ];
 
@@ -184,6 +236,7 @@ export const SEED_FACULTY: Faculty[] = [
     collegeId: 'col_jspm_tathawade',
     name: 'Prof. Sneha Deshmukh',
     email: 'sneha.deshmukh@jspm.edu',
+    phone: '+91 98230 11223',
     department: 'Information Technology',
     designation: 'Assistant Professor',
     subjects: ['Database Management Systems', 'Advanced Database Engineering'],
@@ -196,6 +249,7 @@ export const SEED_FACULTY: Faculty[] = [
     collegeId: 'col_jspm_tathawade',
     name: 'Dr. Rajesh Sharma',
     email: 'rajesh.sharma@jspm.edu',
+    phone: '+91 98220 44556',
     department: 'Information Technology',
     designation: 'HOD & Professor',
     subjects: ['Data Structures & Algorithms', 'System Design'],
@@ -206,6 +260,7 @@ export const SEED_FACULTY: Faculty[] = [
     collegeId: 'col_jspm_tathawade',
     name: 'Prof. Vikram Joshi',
     email: 'vikram.joshi@jspm.edu',
+    phone: '+91 98225 77889',
     department: 'Information Technology',
     designation: 'Associate Professor',
     subjects: ['Operating Systems', 'Cloud Computing & DevOps'],
@@ -216,6 +271,7 @@ export const SEED_FACULTY: Faculty[] = [
     collegeId: 'col_jspm_tathawade',
     name: 'Prof. Anjali Patil',
     email: 'anjali.patil@jspm.edu',
+    phone: '+91 98231 99001',
     department: 'Information Technology',
     designation: 'Assistant Professor',
     subjects: ['Computer Networks', 'Network Security'],

@@ -282,6 +282,25 @@ export default function CampusScreen() {
               <Text style={styles.roomModalBreadcrumb}>
                 {selectedRoom.department} · {selectedRoom.buildingName} · {selectedRoom.floor}
               </Text>
+
+              {selectedRoom.departmentTeacher ? (
+                <View style={{ marginVertical: 6, padding: 8, backgroundColor: '#13261C', borderRadius: 8 }}>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: CampusTheme.colors.primary }}>
+                    In-Charge: {selectedRoom.departmentTeacher}
+                  </Text>
+                  {selectedRoom.teacherPhone ? (
+                    <Text style={{ fontSize: 11, color: '#A3D9BE', marginTop: 2 }}>
+                      Mobile: {selectedRoom.teacherPhone}
+                    </Text>
+                  ) : null}
+                  {selectedRoom.teacherEmail ? (
+                    <Text style={{ fontSize: 11, color: CampusTheme.colors.textMuted, marginTop: 1 }}>
+                      Email: {selectedRoom.teacherEmail}
+                    </Text>
+                  ) : null}
+                </View>
+              ) : null}
+
               <Text style={styles.roomModalDesc}>{selectedRoom.description}</Text>
 
               {selectedRoom.capacity && (

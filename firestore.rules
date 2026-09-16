@@ -33,7 +33,7 @@ service cloud.firestore {
     }
 
     function isFoodCourtStaff(collegeId) {
-      return isCollegeAdminOnly(collegeId) || (isAuthenticated() && getUserRole() == 'food_court_staff' && getUserCollegeId() == collegeId);
+      return isAuthenticated() && getUserRole() == 'food_court_staff' && getUserCollegeId() == collegeId;
     }
 
     function isTeacherStaff(collegeId) {
@@ -82,7 +82,12 @@ service cloud.firestore {
       );
     }
 
-    // 3. Buildings & Rooms (Exclusively governed by College Admin)
+    // 3. Buildings, Rooms & Departments (Exclusively governed by College Admin)
+    match /departments/{deptId} {
+      allow read: if belongsToCollege(resource.data.collegeId);
+      allow write: if isCollegeAdminOnly(request.resource.data.collegeId);
+    }
+
     match /rooms/{roomId} {
       allow read: if belongsToCollege(resource.data.collegeId);
       allow write: if isCollegeAdminOnly(request.resource.data.collegeId);
@@ -106,30 +111,30 @@ service cloud.firestore {
       allow write: if isCollegeAdminOnly(request.resource.data.collegeId);
     }
 
-    // 7. Food Courts & Food Items
+    // 7. Food Courts & Food Items (Partitioned: College Admin cannot inspect food products or live inventory)
     match /foodCourts/{courtId} {
       allow read: if belongsToCollege(resource.data.collegeId);
-      allow write: if isCollegeAdmin(request.resource.data.collegeId);
+      allow write: if isCollegeAdminOnly(request.resource.data.collegeId);
     }
 
     match /foodItems/{itemId} {
-      allow read: if belongsToCollege(resource.data.collegeId);
-      // Students can NEVER edit food prices or availability
-      allow write: if isCollegeAdmin(request.resource.data.collegeId) || isFoodCourtStaff(request.resource.data.collegeId);
+      allow read: if isFoodCourtStaff(resource.data.collegeId) || isStudent(resource.data.collegeId);
+      // Only Food Court Staff manage their products & live availability
+      allow write: if isFoodCourtStaff(request.resource.data.collegeId);
     }
 
-    // 8. Orders
+    // 8. Orders (Partitioned: College Admin has NO access to live orders or order counts)
     match /orders/{orderId} {
-      // Student can read their own orders; Food court staff and College Admin can read orders for their college
+      // Student can read their own orders; Food court staff can read orders for their college
       allow read: if isAuthenticated() && (
         resource.data.studentUid == request.auth.uid ||
         isFoodCourtStaff(resource.data.collegeId)
       );
       // Students create orders; items are price-locked
       allow create: if isAuthenticated() && request.resource.data.studentUid == request.auth.uid;
-      // Staff can update status; students cannot change order status once created
+      // Only Food Court Staff update or complete orders
       allow update: if isFoodCourtStaff(resource.data.collegeId);
-      allow delete: if isCollegeAdmin(resource.data.collegeId);
+      allow delete: if isFoodCourtStaff(resource.data.collegeId);
     }
 
     // 9. Pickup OTPs (PROTECTED: never readable by food court staff directly)

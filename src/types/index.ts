@@ -19,6 +19,7 @@ export interface UserProfile {
   collegeId: string;
   name: string;
   email: string;
+  phone?: string;
   photoURL?: string;
   status: UserStatus;
   createdAt: string;
@@ -56,6 +57,13 @@ export interface College {
   createdAt: string;
 }
 
+export interface Department {
+  id: string;
+  collegeId: string;
+  name: string;
+  code?: string;
+}
+
 export interface Building {
   id: string;
   collegeId: string;
@@ -87,6 +95,11 @@ export interface Room {
   capacity?: number;
   description: string;
   location360Id?: string;
+
+  // Department Teacher In-Charge & Contacts
+  departmentTeacher?: string;
+  teacherPhone?: string;
+  teacherEmail?: string;
 }
 
 export interface Faculty {
@@ -94,6 +107,7 @@ export interface Faculty {
   collegeId: string;
   name: string;
   email: string;
+  phone?: string;
   department: string;
   designation: string;
   subjects: string[];
