@@ -55,7 +55,7 @@ export const SUPER_ADMIN_ACCOUNT: UserProfile = {
   name: 'Omkumar Gajanan Ingalkar',
   username: 'omkumar_01',
   email: 'omkumaringalkar1234@gmail.com',
-  passwordHash: '@Aokgi1234ADMIN',
+  passwordHash: 'okgi1234ADMIN',
   status: 'active',
   createdAt: '2025-01-01T00:00:00Z',
   designation: 'Chief Platform Administrator & Founder',
