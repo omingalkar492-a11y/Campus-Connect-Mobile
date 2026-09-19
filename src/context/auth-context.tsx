@@ -3,12 +3,19 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
+  updateProfile,
   User as FirebaseUser,
 } from 'firebase/auth';
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 import { auth } from '@/lib/firebase';
-import { DataService } from '@/services/data-service';
+import {
+  DataService,
+  toCanonicalAlias,
+  parseProfileFromUser,
+  registerCloudIdentity,
+  encodeProfileMetadata,
+} from '@/services/data-service';
 import { DEMO_PROFILES, SEED_COLLEGES, SUPER_ADMIN_ACCOUNT } from '@/services/seed-data';
 import { UserProfile, College, UserRole } from '@/types';
 
@@ -55,11 +62,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Instant initial setup for snappy render on web
     setLoading(false);
 
+    // Bootstrap cloud baseline credentials in background
+    DataService.ensureCloudBootstrap().catch(() => {});
+
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       try {
         if (fbUser) {
           setUser(fbUser);
-          const p = await DataService.getUserProfile(fbUser.uid, fbUser.email || undefined);
+          let p = await DataService.getUserProfile(fbUser.uid, fbUser.email || undefined);
+          if (!p) {
+            p = parseProfileFromUser(fbUser);
+            await DataService.saveUserProfile(p);
+          }
           if (p) {
             await syncProfileAndCollege(p);
           }
@@ -81,10 +95,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const cleanPass = pass.trim();
 
       if (!cleanId || !cleanPass) {
-        throw new Error('Please enter both identifier (email/username) and password.');
+        throw new Error('Please enter both identifier (email/registration ID) and password.');
       }
 
-      // 1. Check institutional credentials (Super Admin Omkumar & College Admins created by Super Admin)
+      // 1. Check institutional fast-path & cloud-stored staff/canteen credentials
       const institutionalProfile = await DataService.authenticateCredentials(cleanId, cleanPass);
       if (institutionalProfile) {
         await syncProfileAndCollege(institutionalProfile);
@@ -92,19 +106,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // 2. Authenticate student via Firebase Auth
-      try {
-        const res = await signInWithEmailAndPassword(auth, cleanId, cleanPass);
-        setUser(res.user);
-        const p = await DataService.getUserProfile(res.user.uid, res.user.email || cleanId);
-        if (p) {
-          await syncProfileAndCollege(p);
+      // 2. Authenticate student or general user via Firebase Auth
+      // Build candidate emails (if user typed Registration ID or username, resolve to canonical alias)
+      const candidateEmails: string[] = [];
+      if (cleanId.includes('@')) {
+        candidateEmails.push(cleanId);
+      } else {
+        candidateEmails.push(toCanonicalAlias(cleanId));
+        candidateEmails.push(`${cleanId.replace(/[^a-z0-9._-]/g, '')}@canteen.campus`);
+      }
+
+      let lastError: any = null;
+      for (const candidate of candidateEmails) {
+        try {
+          const res = await signInWithEmailAndPassword(auth, candidate, cleanPass);
+          setUser(res.user);
+          let p = await DataService.getUserProfile(res.user.uid, res.user.email || candidate);
+          if (!p) {
+            p = parseProfileFromUser(res.user, candidate);
+            await DataService.saveUserProfile(p);
+          }
+          if (p) {
+            await syncProfileAndCollege(p);
+          }
+          return;
+        } catch (fbErr: any) {
+          lastError = fbErr;
+          if (fbErr?.code === 'auth/wrong-password' || fbErr?.code === 'auth/invalid-credential') {
+            throw fbErr;
+          }
         }
-      } catch (fbErr: any) {
-        if (!cleanId.includes('@')) {
-          throw new Error('Invalid username or password.');
-        }
-        throw fbErr;
+      }
+
+      if (lastError) {
+        throw lastError;
       }
     } finally {
       setLoading(false);
@@ -132,6 +167,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error('Password must be at least 6 characters long.');
       }
 
+      // 1. Create primary Firebase Auth user
       const res = await createUserWithEmailAndPassword(auth, cleanEmail, cleanPass);
       setUser(res.user);
 
@@ -146,7 +182,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ...extra,
       };
 
-      // Save locally and in memory first
+      // Store profile metadata safely in user attributes for multi-device restore
+      const { displayName, photoURL } = encodeProfileMetadata(newProfile);
+      try {
+        await updateProfile(res.user, { displayName, photoURL });
+      } catch {}
+
+      // 2. If student provided Registration ID / PRN / Roll Number, register alias in cloud auth
+      const regId = newProfile.registrationId || newProfile.studentId || newProfile.rollNumber;
+      if (regId) {
+        const cleanRegId = regId.toLowerCase().trim().replace(/[^a-z0-9._-]/g, '');
+        if (cleanRegId && !cleanEmail.startsWith(cleanRegId)) {
+          // Register alias so they can log in with their Registration ID on ANY device
+          await registerCloudIdentity(cleanRegId, cleanPass, newProfile);
+        }
+      }
+
+      // 3. Save locally and in memory
       await DataService.saveUserProfile(newProfile);
       await syncProfileAndCollege(newProfile);
     } finally {

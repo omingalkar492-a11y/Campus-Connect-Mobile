@@ -35,6 +35,7 @@ export interface UserProfile {
   division?: string;
   rollNumber?: string;
   studentId?: string;
+  registrationId?: string;
 
   // Staff specific
   designation?: string;

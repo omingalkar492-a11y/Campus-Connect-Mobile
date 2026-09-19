@@ -25,6 +25,7 @@ export default function LoginScreen() {
   const [activeTab, setActiveTab] = useState<'student' | 'staff'>('student');
   const [isSignup, setIsSignup] = useState(false);
   const [email, setEmail] = useState('');
+  const [registrationId, setRegistrationId] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [selectedCollegeId, setSelectedCollegeId] = useState(SEED_COLLEGES[0].id);
@@ -36,20 +37,20 @@ export default function LoginScreen() {
     const msg = err?.message || '';
 
     if (code === 'auth/email-already-in-use') {
-      return 'This email is already registered. Please switch to sign in.';
+      return 'This email or Registration ID is already registered. Please switch to sign in.';
     }
     if (code === 'auth/weak-password') {
       return 'Password must be at least 6 characters long.';
     }
     if (code === 'auth/invalid-email') {
-      return 'Please enter a valid campus email address.';
+      return 'Please enter a valid campus email address or Registration ID.';
     }
     if (
       code === 'auth/user-not-found' ||
       code === 'auth/wrong-password' ||
       code === 'auth/invalid-credential'
     ) {
-      return 'Incorrect email or password. Please verify your credentials.';
+      return 'Incorrect ID/Email or password. Please verify your credentials.';
     }
     if (code === 'auth/network-request-failed') {
       return 'Network request failed. Please check your internet connection.';
@@ -62,9 +63,14 @@ export default function LoginScreen() {
     setErrorMsg('');
     const cleanEmail = email.trim();
     const cleanPassword = password.trim();
+    const cleanRegId = registrationId.trim().toUpperCase();
 
     if (!cleanEmail || !cleanPassword) {
-      setErrorMsg('Please enter both email and password.');
+      setErrorMsg(
+        isSignup
+          ? 'Please fill in all required fields.'
+          : 'Please enter your ID/Email and password.'
+      );
       return;
     }
 
@@ -82,6 +88,9 @@ export default function LoginScreen() {
           return;
         }
         await signup(cleanEmail, cleanPassword, name.trim(), 'student', selectedCollegeId, {
+          registrationId: cleanRegId || undefined,
+          studentId: cleanRegId || undefined,
+          rollNumber: cleanRegId || undefined,
           department: 'Information Technology',
           year: '3rd Year',
           division: 'Div A',
@@ -208,6 +217,20 @@ export default function LoginScreen() {
 
         {isSignup && activeTab === 'student' && (
           <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Student Registration ID / PRN (Optional)</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. 2024CS001 or PRN24101"
+              placeholderTextColor={CampusTheme.colors.textDim}
+              autoCapitalize="characters"
+              value={registrationId}
+              onChangeText={setRegistrationId}
+            />
+          </View>
+        )}
+
+        {isSignup && activeTab === 'student' && (
+          <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Select College</Text>
             <View style={styles.collegeSelector}>
               {SEED_COLLEGES.map((c) => (
@@ -235,17 +258,25 @@ export default function LoginScreen() {
 
         <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>
-            {activeTab === 'student' ? 'Campus Email Address' : 'Admin Email or Username'}
+            {activeTab === 'student'
+              ? isSignup
+                ? 'Campus Email Address'
+                : 'Campus Email or Registration ID / PRN'
+              : 'Institutional ID, Username, or Email'}
           </Text>
           <TextInput
             style={styles.input}
             placeholder={
               activeTab === 'student'
-                ? 'e.g. student@jspm.edu'
-                : 'omkumaringalkar1234@gmail.com or omkumar_01'
+                ? isSignup
+                  ? 'e.g. student@jspm.edu'
+                  : 'e.g. 2024CS001 or student@jspm.edu'
+                : 'omkumar_01, admin_jspm, or email'
             }
             placeholderTextColor={CampusTheme.colors.textDim}
-            keyboardType={activeTab === 'student' ? 'email-address' : 'default'}
+            keyboardType={
+              activeTab === 'student' && isSignup ? 'email-address' : 'default'
+            }
             autoCapitalize="none"
             value={email}
             onChangeText={setEmail}
@@ -263,6 +294,12 @@ export default function LoginScreen() {
             onChangeText={setPassword}
           />
         </View>
+
+        {!isSignup && (
+          <Text style={styles.deviceHintText}>
+            Multi-device sync active: sign in with your ID & password on any device.
+          </Text>
+        )}
 
         <Pressable
           style={[styles.submitButton, submitting && { opacity: 0.7 }]}
@@ -468,6 +505,13 @@ const styles = StyleSheet.create({
   activeCollegePillText: {
     color: CampusTheme.colors.primary,
     fontWeight: '700',
+  },
+  deviceHintText: {
+    fontSize: 12,
+    color: CampusTheme.colors.textMint,
+    textAlign: 'center',
+    marginBottom: 10,
+    opacity: 0.85,
   },
   submitButton: {
     backgroundColor: CampusTheme.colors.primary,
