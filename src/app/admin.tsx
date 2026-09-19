@@ -166,6 +166,9 @@ export default function CollegeAdminScreen() {
       setCanteenOwners(owners);
       setDepartments(depts);
       setStaffMembers(staff);
+
+      // Automatically ensure all canteen owners are synced to cloud for multi-device access
+      DataService.syncAllCanteenOwnersToCloud(college.id).catch(() => {});
     } catch (e) {
       console.error('Error loading admin data:', e);
     }

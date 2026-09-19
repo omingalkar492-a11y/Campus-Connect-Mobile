@@ -52,6 +52,8 @@ export default function SuperAdminScreen() {
       if (cols.length > 0 && !newAdminCollegeId) {
         setNewAdminCollegeId(cols[0].id);
       }
+      // Ensure all college admins are provisioned to cloud auth for multi-device access
+      DataService.syncAllCollegeAdminsToCloud().catch(() => {});
     } catch (e) {
       console.error('Error loading super admin data:', e);
     } finally {

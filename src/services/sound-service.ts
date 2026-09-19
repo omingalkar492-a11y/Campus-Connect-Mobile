@@ -18,15 +18,16 @@ class SoundServiceImpl {
         const stored = window.localStorage.getItem(SOUND_PREF_KEY);
         if (stored !== null) {
           this.soundEnabled = stored === 'true';
-          this.initialized = true;
-          return;
+        } else {
+          this.soundEnabled = true; // Default ON for counter staff
         }
-      }
-      const asyncStored = await AsyncStorage.getItem(SOUND_PREF_KEY);
-      if (asyncStored !== null) {
-        this.soundEnabled = asyncStored === 'true';
       } else {
-        this.soundEnabled = true; // Default ON for counter staff
+        const asyncStored = await AsyncStorage.getItem(SOUND_PREF_KEY);
+        if (asyncStored !== null) {
+          this.soundEnabled = asyncStored === 'true';
+        } else {
+          this.soundEnabled = true; // Default ON for counter staff
+        }
       }
     } catch (e) {
       this.soundEnabled = true;
@@ -51,8 +52,9 @@ class SoundServiceImpl {
     try {
       if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
         window.localStorage.setItem(SOUND_PREF_KEY, String(enabled));
+      } else {
+        await AsyncStorage.setItem(SOUND_PREF_KEY, String(enabled));
       }
-      await AsyncStorage.setItem(SOUND_PREF_KEY, String(enabled));
     } catch (e) {
       console.warn('Could not persist sound preference:', e);
     }

@@ -212,21 +212,21 @@ export const parseProfileFromUser = (
     uid: meta.uid || user.uid,
     name:
       meta.name ||
-      user.displayName ||
+      (user.displayName && !user.displayName.trim().startsWith('{') ? user.displayName : '') ||
       (email ? email.split('@')[0] : 'Campus User'),
     role:
       meta.role ||
       (email.includes('canteen') ? 'food_court_staff' : 'student'),
     collegeId: meta.collegeId || 'col_jspm_tathawade',
     email:
-      meta.email ||
+      // meta.email is not encoded in compact metadata; derive from context
       (isAlias
         ? meta.username
           ? `${meta.username}@campusconnect.edu`
           : email
         : email),
-    status: meta.status || 'active',
-    createdAt: meta.createdAt || new Date().toISOString(),
+    status: 'active',
+    createdAt: new Date().toISOString(),
     username: meta.username || derivedUsername,
     studentId: meta.studentId || meta.registrationId,
     registrationId: meta.registrationId || meta.studentId,
@@ -237,7 +237,7 @@ export const parseProfileFromUser = (
     phone: meta.phone,
     designation: meta.designation,
     assignedFoodCourtId: meta.assignedFoodCourtId,
-    permissions: meta.permissions,
+    // permissions and passwordHash are not stored in the compact metadata encoding
     passwordHash: meta.passwordHash,
   };
 
@@ -245,37 +245,48 @@ export const parseProfileFromUser = (
 };
 
 /**
- * Registers or updates a cloud identity in Firebase Auth using the isolated secondaryAuth instance.
- * Ensures the credentials can be authenticated from ANY device with ID and password.
+ * Registers or updates a cloud identity in Firebase Auth.
+ * Tries secondaryAuth first (which does not affect active login session),
+ * falling back to primary auth only if no user is currently signed in.
+ * Ensures credentials can be authenticated from ANY device with ID and password.
  */
 export const registerCloudIdentity = async (
   emailOrAlias: string,
   password: string,
   profile: UserProfile
-): Promise<void> => {
-  try {
-    const email = toCanonicalAlias(emailOrAlias);
-    const { displayName, photoURL } = encodeProfileMetadata(profile);
+): Promise<boolean> => {
+  const email = toCanonicalAlias(emailOrAlias);
+  const { displayName, photoURL } = encodeProfileMetadata(profile);
 
+  // Use secondaryAuth if available to avoid touching primary auth session
+  const authInstances = [
+    secondaryAuth && secondaryAuth !== auth ? secondaryAuth : null,
+    !auth.currentUser || auth.currentUser.uid === profile.uid ? auth : null,
+  ].filter(Boolean);
+
+  for (const authInst of authInstances) {
     try {
       const cred = await createUserWithEmailAndPassword(
-        secondaryAuth,
+        authInst,
         email,
         password
       );
       await updateProfile(cred.user, { displayName, photoURL });
-      await signOut(secondaryAuth);
+      if (authInst === secondaryAuth) {
+        await signOut(secondaryAuth).catch(() => {});
+      }
+      return true;
     } catch (authErr: any) {
       if (authErr?.code === 'auth/email-already-in-use') {
         try {
           let cred;
           try {
-            cred = await signInWithEmailAndPassword(secondaryAuth, email, password);
+            cred = await signInWithEmailAndPassword(authInst, email, password);
           } catch {
             if (profile.passwordHash && profile.passwordHash !== password) {
               try {
                 cred = await signInWithEmailAndPassword(
-                  secondaryAuth,
+                  authInst,
                   email,
                   profile.passwordHash
                 );
@@ -285,36 +296,49 @@ export const registerCloudIdentity = async (
           }
           if (cred) {
             await updateProfile(cred.user, { displayName, photoURL });
-            await signOut(secondaryAuth);
+            if (authInst === secondaryAuth) {
+              await signOut(secondaryAuth).catch(() => {});
+            }
+            return true;
           }
         } catch {}
       }
     }
-  } catch (e) {
-    console.warn('Could not register cloud identity:', e);
   }
+
+  return false;
 };
 
 /**
- * Deletes or disables a cloud identity in Firebase Auth using secondaryAuth.
+ * Deletes or disables a cloud identity in Firebase Auth.
  */
 export const removeCloudIdentity = async (
   emailOrAlias?: string,
   currentPassword?: string
 ): Promise<void> => {
   if (!emailOrAlias) return;
-  try {
-    const email = toCanonicalAlias(emailOrAlias);
-    if (currentPassword) {
-      const cred = await signInWithEmailAndPassword(
-        secondaryAuth,
-        email,
-        currentPassword
-      );
-      await deleteUser(cred.user);
-      await signOut(secondaryAuth);
-    }
-  } catch {}
+  const email = toCanonicalAlias(emailOrAlias);
+  const authInstances = [
+    secondaryAuth && secondaryAuth !== auth ? secondaryAuth : null,
+    !auth.currentUser ? auth : null,
+  ].filter(Boolean);
+
+  for (const authInst of authInstances) {
+    try {
+      if (currentPassword) {
+        const cred = await signInWithEmailAndPassword(
+          authInst,
+          email,
+          currentPassword
+        );
+        await deleteUser(cred.user);
+        if (authInst === secondaryAuth) {
+          await signOut(secondaryAuth).catch(() => {});
+        }
+        return;
+      }
+    } catch {}
+  }
 };
 
 // Initialize runtime cache from local persistence
@@ -568,8 +592,9 @@ export const DataService = {
       const json = JSON.stringify(runtimeUsers);
       if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
         window.localStorage.setItem(USERS_STORAGE_KEY, json);
+      } else {
+        await AsyncStorage.setItem(USERS_STORAGE_KEY, json);
       }
-      await AsyncStorage.setItem(USERS_STORAGE_KEY, json);
     } catch (e) {
       console.warn('Could not save user profile locally:', e);
     }
@@ -774,8 +799,12 @@ export const DataService = {
   },
 
   async add360Location(location: Campus360Location, actorRole?: UserRole): Promise<void> {
-    if (actorRole === 'super_admin') {
-      throw new Error('Super Admin does not have permission to modify college 360° views. Only the assigned College Admin can manage campus 360° tours.');
+    if (actorRole && actorRole !== 'college_admin') {
+      throw new Error(
+        actorRole === 'super_admin'
+          ? 'Super Admin does not have permission to modify college 360° views. Only the assigned College Admin can manage campus 360° tours.'
+          : 'Security Violation: Only College Admin is authorized to add campus 360° locations.'
+      );
     }
     const url = (location.embedUrl || location.externalUrl || '').trim();
     const cleanLocation: Campus360Location = {
@@ -791,8 +820,12 @@ export const DataService = {
   },
 
   async update360Location(locationId: string, updates: Partial<Campus360Location>, actorRole?: UserRole): Promise<void> {
-    if (actorRole === 'super_admin') {
-      throw new Error('Super Admin does not have permission to modify college 360° views. Only the assigned College Admin can manage campus 360° tours.');
+    if (actorRole && actorRole !== 'college_admin') {
+      throw new Error(
+        actorRole === 'super_admin'
+          ? 'Super Admin does not have permission to modify college 360° views. Only the assigned College Admin can manage campus 360° tours.'
+          : 'Security Violation: Only College Admin is authorized to edit campus 360° locations.'
+      );
     }
     const idx = runtime360Locations.findIndex((l) => l.id === locationId);
     if (idx !== -1) {
@@ -808,8 +841,12 @@ export const DataService = {
   },
 
   async delete360Location(locationId: string, actorRole?: UserRole): Promise<void> {
-    if (actorRole === 'super_admin') {
-      throw new Error('Super Admin does not have permission to modify college 360° views. Only the assigned College Admin can manage campus 360° tours.');
+    if (actorRole && actorRole !== 'college_admin') {
+      throw new Error(
+        actorRole === 'super_admin'
+          ? 'Super Admin does not have permission to modify college 360° views. Only the assigned College Admin can manage campus 360° tours.'
+          : 'Security Violation: Only College Admin is authorized to delete campus 360° locations.'
+      );
     }
     runtime360Locations = runtime360Locations.filter((l) => l.id !== locationId);
     await saveToStorage(LOCATIONS_360_STORAGE_KEY, runtime360Locations);
@@ -1377,6 +1414,7 @@ export const DataService = {
     const cleanEmail = adminData.email.toLowerCase().trim();
     const cleanName = adminData.name.trim();
     const cleanPassword = adminData.password.trim();
+    const derivedUsername = cleanEmail.split('@')[0];
 
     if (!cleanEmail || !cleanPassword || !cleanName) {
       throw new Error('Please provide name, email, and password for the College Admin.');
@@ -1392,6 +1430,7 @@ export const DataService = {
       collegeId: adminData.collegeId,
       name: cleanName,
       email: cleanEmail,
+      username: derivedUsername,
       passwordHash: cleanPassword,
       designation: adminData.designation?.trim() || 'Campus Administrator & Dean',
       status: 'active',
@@ -1401,14 +1440,23 @@ export const DataService = {
 
     runtimeCollegeAdmins[newAdmin.uid] = newAdmin;
     runtimeCollegeAdmins[cleanEmail] = newAdmin;
+    if (derivedUsername) {
+      runtimeCollegeAdmins[derivedUsername] = newAdmin;
+    }
     runtimeUsers[newAdmin.uid] = newAdmin;
     runtimeUsers[cleanEmail] = newAdmin;
+    if (derivedUsername) {
+      runtimeUsers[derivedUsername] = newAdmin;
+    }
 
     await saveToStorage(COLLEGE_ADMINS_STORAGE_KEY, runtimeCollegeAdmins);
     await saveToStorage(USERS_STORAGE_KEY, runtimeUsers);
 
-    // Provision into Cloud Auth for multi-device access
+    // Provision into Cloud Auth for multi-device access with email and username
     await registerCloudIdentity(cleanEmail, cleanPassword, newAdmin);
+    if (derivedUsername) {
+      await registerCloudIdentity(derivedUsername, cleanPassword, newAdmin);
+    }
 
     try {
       await withTimeout(setDoc(doc(db, 'users', newAdmin.uid), newAdmin), 1500);
@@ -1429,6 +1477,11 @@ export const DataService = {
       delete runtimeCollegeAdmins[admin.email.toLowerCase()];
       delete runtimeUsers[admin.email.toLowerCase()];
       await removeCloudIdentity(admin.email, admin.passwordHash);
+    }
+    if (admin?.username) {
+      delete runtimeCollegeAdmins[admin.username.toLowerCase()];
+      delete runtimeUsers[admin.username.toLowerCase()];
+      await removeCloudIdentity(admin.username, admin.passwordHash);
     }
 
     await saveToStorage(COLLEGE_ADMINS_STORAGE_KEY, runtimeCollegeAdmins);
@@ -1478,6 +1531,7 @@ export const DataService = {
     const cleanName = ownerData.name.trim();
     const cleanPassword = ownerData.password.trim();
     const cleanPhone = ownerData.phone.trim();
+    const digits = cleanPhone.replace(/\D/g, '');
 
     if (!cleanUsername || !cleanPassword || !cleanName || !cleanPhone) {
       throw new Error('Please provide name, username/ID, password, and mobile number.');
@@ -1488,6 +1542,7 @@ export const DataService = {
     }
 
     const email = `${cleanUsername.replace(/[^a-z0-9]/g, '')}@canteen.campus`;
+    const campusConnectEmail = `${cleanUsername.replace(/[^a-z0-9._-]/g, '')}@campusconnect.edu`;
 
     const newOwner: UserProfile = {
       uid: `canteen_owner_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
@@ -1509,16 +1564,31 @@ export const DataService = {
     runtimeCanteenOwners[newOwner.uid] = newOwner;
     runtimeCanteenOwners[cleanUsername] = newOwner;
     runtimeCanteenOwners[email] = newOwner;
+    runtimeCanteenOwners[campusConnectEmail] = newOwner;
+    if (digits.length >= 10) {
+      runtimeCanteenOwners[digits] = newOwner;
+      runtimeCanteenOwners[digits.slice(-10)] = newOwner;
+    }
+
     runtimeUsers[newOwner.uid] = newOwner;
     runtimeUsers[cleanUsername] = newOwner;
     runtimeUsers[email] = newOwner;
+    runtimeUsers[campusConnectEmail] = newOwner;
+    if (digits.length >= 10) {
+      runtimeUsers[digits] = newOwner;
+      runtimeUsers[digits.slice(-10)] = newOwner;
+    }
 
     await saveToStorage(CANTEEN_OWNERS_STORAGE_KEY, runtimeCanteenOwners);
     await saveToStorage(USERS_STORAGE_KEY, runtimeUsers);
 
-    // Provision into Cloud Auth for multi-device access with username alias
+    // Provision into Cloud Auth for multi-device access with username alias, email, and phone
     await registerCloudIdentity(cleanUsername, cleanPassword, newOwner);
     await registerCloudIdentity(email, cleanPassword, newOwner);
+    await registerCloudIdentity(campusConnectEmail, cleanPassword, newOwner);
+    if (digits.length >= 10) {
+      await registerCloudIdentity(`${digits.slice(-10)}@campusconnect.edu`, cleanPassword, newOwner);
+    }
 
     try {
       await withTimeout(setDoc(doc(db, 'users', newOwner.uid), newOwner), 1500);
@@ -1555,19 +1625,21 @@ export const DataService = {
     await saveToStorage(USERS_STORAGE_KEY, runtimeUsers);
 
     // Sync updated credentials to Cloud Auth
+    const pwd = updated.passwordHash || existing.passwordHash || 'canteen123';
     if (updated.username) {
-      await registerCloudIdentity(
-        updated.username,
-        updated.passwordHash || 'canteen123',
-        updated
-      );
+      const cleanU = updated.username.toLowerCase().trim();
+      await registerCloudIdentity(cleanU, pwd, updated);
+      await registerCloudIdentity(`${cleanU.replace(/[^a-z0-9]/g, '')}@canteen.campus`, pwd, updated);
+      await registerCloudIdentity(`${cleanU.replace(/[^a-z0-9._-]/g, '')}@campusconnect.edu`, pwd, updated);
     }
     if (updated.email) {
-      await registerCloudIdentity(
-        updated.email,
-        updated.passwordHash || 'canteen123',
-        updated
-      );
+      await registerCloudIdentity(updated.email, pwd, updated);
+    }
+    if (updated.phone) {
+      const digits = updated.phone.replace(/\D/g, '');
+      if (digits.length >= 10) {
+        await registerCloudIdentity(`${digits.slice(-10)}@campusconnect.edu`, pwd, updated);
+      }
     }
 
     try {
@@ -1586,14 +1658,23 @@ export const DataService = {
     delete runtimeCanteenOwners[uid];
     delete runtimeUsers[uid];
     if (owner?.username) {
-      delete runtimeCanteenOwners[owner.username.toLowerCase()];
-      delete runtimeUsers[owner.username.toLowerCase()];
-      await removeCloudIdentity(owner.username, owner.passwordHash);
+      const cleanU = owner.username.toLowerCase().trim();
+      delete runtimeCanteenOwners[cleanU];
+      delete runtimeUsers[cleanU];
+      await removeCloudIdentity(cleanU, owner.passwordHash);
+      await removeCloudIdentity(`${cleanU.replace(/[^a-z0-9]/g, '')}@canteen.campus`, owner.passwordHash);
+      await removeCloudIdentity(`${cleanU.replace(/[^a-z0-9._-]/g, '')}@campusconnect.edu`, owner.passwordHash);
     }
     if (owner?.email) {
       delete runtimeCanteenOwners[owner.email.toLowerCase()];
       delete runtimeUsers[owner.email.toLowerCase()];
       await removeCloudIdentity(owner.email, owner.passwordHash);
+    }
+    if (owner?.phone) {
+      const digits = owner.phone.replace(/\D/g, '');
+      if (digits.length >= 10) {
+        await removeCloudIdentity(`${digits.slice(-10)}@campusconnect.edu`, owner.passwordHash);
+      }
     }
 
     await saveToStorage(CANTEEN_OWNERS_STORAGE_KEY, runtimeCanteenOwners);
@@ -1696,51 +1777,55 @@ export const DataService = {
       const sanitized = cleanId.replace(/[^a-z0-9._-]/g, '');
       candidates.push(`${sanitized}@campusconnect.edu`);
       candidates.push(`${sanitized}@canteen.campus`);
+      const digits = cleanId.replace(/\D/g, '');
+      if (digits.length >= 10) {
+        candidates.push(`${digits.slice(-10)}@campusconnect.edu`);
+      }
     }
 
+    const authInstances = [secondaryAuth, auth].filter(Boolean);
+
     for (const cand of candidates) {
-      try {
-        const cred = await signInWithEmailAndPassword(
-          secondaryAuth,
-          cand,
-          cleanPass
-        );
-        const profile = parseProfileFromUser(cred.user, cand);
-        await signOut(secondaryAuth);
+      for (const authInst of authInstances) {
+        try {
+          const cred = await signInWithEmailAndPassword(
+            authInst,
+            cand,
+            cleanPass
+          );
+          const profile = parseProfileFromUser(cred.user, cand);
+          if (authInst === secondaryAuth) {
+            await signOut(secondaryAuth).catch(() => {});
+          }
 
-        // Cache locally for fast future loads
-        runtimeUsers[profile.uid] = profile;
-        if (profile.username)
-          runtimeUsers[profile.username.toLowerCase()] = profile;
-        if (profile.email)
-          runtimeUsers[profile.email.toLowerCase()] = profile;
-
-        if (profile.role === 'college_admin') {
-          runtimeCollegeAdmins[profile.uid] = profile;
+          // Cache locally for fast future loads
+          runtimeUsers[profile.uid] = profile;
           if (profile.username)
-            runtimeCollegeAdmins[profile.username.toLowerCase()] = profile;
+            runtimeUsers[profile.username.toLowerCase()] = profile;
           if (profile.email)
-            runtimeCollegeAdmins[profile.email.toLowerCase()] = profile;
-          await saveToStorage(COLLEGE_ADMINS_STORAGE_KEY, runtimeCollegeAdmins);
-        } else if (profile.role === 'food_court_staff') {
-          runtimeCanteenOwners[profile.uid] = profile;
-          if (profile.username)
-            runtimeCanteenOwners[profile.username.toLowerCase()] = profile;
-          if (profile.email)
-            runtimeCanteenOwners[profile.email.toLowerCase()] = profile;
-          await saveToStorage(CANTEEN_OWNERS_STORAGE_KEY, runtimeCanteenOwners);
-        }
-        await saveToStorage(USERS_STORAGE_KEY, runtimeUsers);
+            runtimeUsers[profile.email.toLowerCase()] = profile;
 
-        return profile;
-      } catch (authErr: any) {
-        if (
-          authErr?.code === 'auth/wrong-password' ||
-          authErr?.code === 'auth/invalid-credential'
-        ) {
-          throw new Error('Incorrect password. Please verify your credentials.');
+          if (profile.role === 'college_admin') {
+            runtimeCollegeAdmins[profile.uid] = profile;
+            if (profile.username)
+              runtimeCollegeAdmins[profile.username.toLowerCase()] = profile;
+            if (profile.email)
+              runtimeCollegeAdmins[profile.email.toLowerCase()] = profile;
+            await saveToStorage(COLLEGE_ADMINS_STORAGE_KEY, runtimeCollegeAdmins);
+          } else if (profile.role === 'food_court_staff') {
+            runtimeCanteenOwners[profile.uid] = profile;
+            if (profile.username)
+              runtimeCanteenOwners[profile.username.toLowerCase()] = profile;
+            if (profile.email)
+              runtimeCanteenOwners[profile.email.toLowerCase()] = profile;
+            await saveToStorage(CANTEEN_OWNERS_STORAGE_KEY, runtimeCanteenOwners);
+          }
+          await saveToStorage(USERS_STORAGE_KEY, runtimeUsers);
+
+          return profile;
+        } catch {
+          // Continue testing all candidate aliases and auth instances without premature aborts
         }
-        // If user-not-found on this candidate, loop continues to try next candidate
       }
     }
 
@@ -1779,7 +1864,60 @@ export const DataService = {
           SEED_CANTEEN_OWNER
         );
       }
+
+      // Sync all existing college admins and canteen owners to cloud
+      await this.syncAllCollegeAdminsToCloud();
+      await this.syncAllCanteenOwnersToCloud();
     } catch {}
+  },
+
+  async syncAllCanteenOwnersToCloud(collegeId?: string): Promise<number> {
+    let count = 0;
+    const owners = await this.getCanteenOwners(collegeId);
+    for (const owner of owners) {
+      const pwd = owner.passwordHash || 'canteen123';
+      try {
+        if (owner.username) {
+          const cleanU = owner.username.toLowerCase().trim();
+          await registerCloudIdentity(cleanU, pwd, owner);
+          await registerCloudIdentity(`${cleanU.replace(/[^a-z0-9]/g, '')}@canteen.campus`, pwd, owner);
+          await registerCloudIdentity(`${cleanU.replace(/[^a-z0-9._-]/g, '')}@campusconnect.edu`, pwd, owner);
+        }
+        if (owner.email) {
+          await registerCloudIdentity(owner.email, pwd, owner);
+        }
+        if (owner.phone) {
+          const digits = owner.phone.replace(/\D/g, '');
+          if (digits.length >= 10) {
+            await registerCloudIdentity(`${digits.slice(-10)}@campusconnect.edu`, pwd, owner);
+          }
+        }
+        count++;
+      } catch (e) {
+        console.warn('Failed to sync canteen owner to cloud:', owner.username, e);
+      }
+    }
+    return count;
+  },
+
+  async syncAllCollegeAdminsToCloud(): Promise<number> {
+    let count = 0;
+    const admins = await this.getCollegeAdmins();
+    for (const admin of admins) {
+      const pwd = admin.passwordHash || 'admin123';
+      try {
+        if (admin.email) {
+          await registerCloudIdentity(admin.email, pwd, admin);
+        }
+        if (admin.username) {
+          await registerCloudIdentity(admin.username, pwd, admin);
+        }
+        count++;
+      } catch (e) {
+        console.warn('Failed to sync college admin to cloud:', admin.email, e);
+      }
+    }
+    return count;
   },
 
   // 12. Food Court Bank Account & Payout Gateway Configuration

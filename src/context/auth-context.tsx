@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -7,6 +8,7 @@ import {
   User as FirebaseUser,
 } from 'firebase/auth';
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { Platform } from 'react-native';
 
 import { auth } from '@/lib/firebase';
 import {
@@ -56,11 +58,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } else {
       setCollege(SEED_COLLEGES[0]);
     }
+
+    try {
+      const raw = JSON.stringify(userProfile);
+      if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem('cc_active_profile', raw);
+      } else if (Platform.OS !== 'web') {
+        await AsyncStorage.setItem('cc_active_profile', raw);
+      }
+    } catch {}
   };
 
   useEffect(() => {
-    // Instant initial setup for snappy render on web
-    setLoading(false);
+    let authListenerFired = false;
 
     // Bootstrap cloud baseline credentials in background
     DataService.ensureCloudBootstrap().catch(() => {});
@@ -77,10 +87,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (p) {
             await syncProfileAndCollege(p);
           }
+        } else {
+          // No Firebase session — try to restore from local storage for offline/demo use
+          if (!authListenerFired) {
+            try {
+              let savedRaw: string | null = null;
+              if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+                savedRaw = window.localStorage.getItem('cc_active_profile');
+              } else if (Platform.OS !== 'web') {
+                savedRaw = await AsyncStorage.getItem('cc_active_profile');
+              }
+              if (savedRaw) {
+                const savedProfile = JSON.parse(savedRaw);
+                if (savedProfile && savedProfile.uid) {
+                  await syncProfileAndCollege(savedProfile);
+                }
+              }
+            } catch {}
+          }
         }
       } catch (err) {
         console.error('Auth sync error:', err);
       } finally {
+        authListenerFired = true;
         setLoading(false);
       }
     });
@@ -101,19 +130,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // 1. Check institutional fast-path & cloud-stored staff/canteen credentials
       const institutionalProfile = await DataService.authenticateCredentials(cleanId, cleanPass);
       if (institutionalProfile) {
+        try {
+          const alias = institutionalProfile.email || toCanonicalAlias(institutionalProfile.username || cleanId);
+          const cred = await signInWithEmailAndPassword(auth, alias, cleanPass);
+          setUser(cred.user);
+        } catch {}
         await syncProfileAndCollege(institutionalProfile);
         setLoading(false);
         return;
       }
 
       // 2. Authenticate student or general user via Firebase Auth
-      // Build candidate emails (if user typed Registration ID or username, resolve to canonical alias)
+      // Build candidate emails (if user typed Registration ID, username, or phone, test all aliases)
       const candidateEmails: string[] = [];
       if (cleanId.includes('@')) {
         candidateEmails.push(cleanId);
       } else {
         candidateEmails.push(toCanonicalAlias(cleanId));
         candidateEmails.push(`${cleanId.replace(/[^a-z0-9._-]/g, '')}@canteen.campus`);
+        const digits = cleanId.replace(/\D/g, '');
+        if (digits.length >= 10) {
+          candidateEmails.push(`${digits.slice(-10)}@campusconnect.edu`);
+        }
       }
 
       let lastError: any = null;
@@ -132,9 +170,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         } catch (fbErr: any) {
           lastError = fbErr;
-          if (fbErr?.code === 'auth/wrong-password' || fbErr?.code === 'auth/invalid-credential') {
-            throw fbErr;
-          }
+          // Continue loop to try next candidate alias without premature aborts
         }
       }
 
@@ -213,6 +249,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       setProfile(null);
       setCollege(null);
+      if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.removeItem('cc_active_profile');
+      } else if (Platform.OS !== 'web') {
+        await AsyncStorage.removeItem('cc_active_profile');
+      }
     } catch {}
     setLoading(false);
   };

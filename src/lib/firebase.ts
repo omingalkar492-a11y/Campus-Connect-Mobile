@@ -37,20 +37,30 @@ try {
   authInstance = getAuth(app);
 }
 
-// Secondary auth instance isolated to in-memory persistence.
+// Secondary auth instance isolated to SecondaryAuth app.
 // Used for provisioning and updating credentials in the cloud without logging out the active admin.
 let secondaryAuthInstance: any;
 try {
   const secondaryApp =
     getApps().find((a) => a.name === 'SecondaryAuth') ||
     initializeApp(firebaseConfig, 'SecondaryAuth');
-  secondaryAuthInstance = initializeAuth(secondaryApp, {
-    persistence: inMemoryPersistence,
-  });
+  if (Platform.OS === 'web') {
+    secondaryAuthInstance = initializeAuth(secondaryApp, {
+      persistence: inMemoryPersistence,
+    });
+  } else {
+    secondaryAuthInstance = initializeAuth(secondaryApp, {
+      persistence: getReactNativePersistence(AsyncStorage),
+    });
+  }
 } catch {
-  const secondaryApp =
-    getApps().find((a) => a.name === 'SecondaryAuth') || getApp('SecondaryAuth');
-  secondaryAuthInstance = getAuth(secondaryApp);
+  try {
+    const secondaryApp =
+      getApps().find((a) => a.name === 'SecondaryAuth') || getApp('SecondaryAuth');
+    secondaryAuthInstance = getAuth(secondaryApp);
+  } catch {
+    secondaryAuthInstance = authInstance;
+  }
 }
 
 export const auth = authInstance;
