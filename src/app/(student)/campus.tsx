@@ -285,16 +285,16 @@ export default function CampusScreen() {
 
               {selectedRoom.departmentTeacher ? (
                 <View style={{ marginVertical: 6, padding: 8, backgroundColor: '#13261C', borderRadius: 8 }}>
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: CampusTheme.colors.primary }}>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#C4AAFF' }}>
                     In-Charge: {selectedRoom.departmentTeacher}
                   </Text>
                   {selectedRoom.teacherPhone ? (
-                    <Text style={{ fontSize: 11, color: '#A3D9BE', marginTop: 2 }}>
+                    <Text style={{ fontSize: 11, color: '#C4AAFF', marginTop: 2 }}>
                       Mobile: {selectedRoom.teacherPhone}
                     </Text>
                   ) : null}
                   {selectedRoom.teacherEmail ? (
-                    <Text style={{ fontSize: 11, color: CampusTheme.colors.textMuted, marginTop: 1 }}>
+                    <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 1 }}>
                       Email: {selectedRoom.teacherEmail}
                     </Text>
                   ) : null}
@@ -342,7 +342,7 @@ export default function CampusScreen() {
 const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
-    backgroundColor: CampusTheme.colors.background,
+    backgroundColor: '#0A0010',
   },
   container: {
     flex: 1,
@@ -358,29 +358,29 @@ const styles = StyleSheet.create({
   brandSubtitle: {
     fontSize: 12,
     fontWeight: '800',
-    color: CampusTheme.colors.primary,
+    color: '#C4AAFF',
     letterSpacing: 1.2,
     marginBottom: 6,
   },
   mainTitle: {
     fontSize: 34,
     fontWeight: '800',
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
     letterSpacing: -0.5,
   },
   taglineDesc: {
     fontSize: 14,
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     marginTop: 4,
     marginBottom: 20,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#15251E',
+    backgroundColor: 'rgba(196,170,255,0.06)',
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.15)',
+    borderColor: 'rgba(196,170,255,0.15)',
     paddingHorizontal: 16,
     height: 54,
     marginBottom: 16,
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
     fontSize: 15,
   },
   clearSearchBtn: {
@@ -411,27 +411,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 9,
     borderRadius: 9999,
-    backgroundColor: '#162820',
+    backgroundColor: 'rgba(196,170,255,0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.1)',
+    borderColor: 'rgba(196,170,255,0.1)',
   },
   activeFilterPill: {
-    backgroundColor: CampusTheme.colors.primary,
-    borderColor: CampusTheme.colors.primary,
+    backgroundColor: '#9B5CFF',
+    bordercolor: '#C4AAFF',
   },
   filterPillText: {
     fontSize: 13,
     fontWeight: '700',
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
   },
   activeFilterPillText: {
-    color: CampusTheme.colors.background,
+    color: '#FFFFFF',
     fontWeight: '800',
   },
   hero360Card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#8EE4AF',
+    backgroundColor: '#C4AAFF',
     borderRadius: 24,
     padding: 20,
     marginBottom: 28,
@@ -453,7 +453,7 @@ const styles = StyleSheet.create({
   hero360Title: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#0D1411',
+    color: '#FFFFFF',
     marginBottom: 4,
   },
   hero360Subtitle: {
@@ -466,7 +466,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#0D1411',
+    backgroundcolor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -479,11 +479,11 @@ const styles = StyleSheet.create({
   sectionHeading: {
     fontSize: 20,
     fontWeight: '800',
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
   },
   placesCount: {
     fontSize: 12,
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     fontWeight: '600',
   },
   placesList: {
@@ -492,19 +492,19 @@ const styles = StyleSheet.create({
   },
   roomCard: {
     flexDirection: 'row',
-    backgroundColor: '#15251E',
+    backgroundColor: 'rgba(196,170,255,0.06)',
     borderRadius: 22,
     padding: 18,
     gap: 14,
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.15)',
+    borderColor: 'rgba(196,170,255,0.15)',
     ...CampusTheme.shadows.card,
   },
   roomIconWrapper: {
     width: 44,
     height: 44,
     borderRadius: 14,
-    backgroundColor: '#1C3328',
+    backgroundColor: 'rgba(196,170,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -520,7 +520,7 @@ const styles = StyleSheet.create({
   roomNumberTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
   },
   roomTypeTag: {
     backgroundColor: '#1C3528',
@@ -528,22 +528,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 3,
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.15)',
+    borderColor: 'rgba(196,170,255,0.15)',
   },
   roomTypeTagText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#A3D9BE',
+    color: '#C4AAFF',
   },
   roomBreadcrumb: {
     fontSize: 12,
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     marginBottom: 8,
     fontWeight: '500',
   },
   roomDescription: {
     fontSize: 13,
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     lineHeight: 18,
   },
   room360InlineBtn: {
@@ -552,7 +552,7 @@ const styles = StyleSheet.create({
     gap: 6,
     marginTop: 10,
     alignSelf: 'flex-start',
-    backgroundColor: '#1B3528',
+    backgroundColor: 'rgba(196,170,255,0.1)',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 6,
@@ -561,7 +561,7 @@ const styles = StyleSheet.create({
   room360InlineText: {
     fontSize: 11,
     fontWeight: '700',
-    color: CampusTheme.colors.primary,
+    color: '#C4AAFF',
   },
   facultySection: {
     marginTop: 10,
@@ -571,18 +571,18 @@ const styles = StyleSheet.create({
   },
   facultyCard: {
     flexDirection: 'row',
-    backgroundColor: '#15251E',
+    backgroundColor: 'rgba(196,170,255,0.06)',
     borderRadius: 18,
     padding: 16,
     gap: 12,
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.12)',
+    borderColor: 'rgba(196,170,255,0.12)',
   },
   facultyAvatarBox: {
     width: 44,
     height: 44,
     borderRadius: 14,
-    backgroundColor: '#1C3328',
+    backgroundColor: 'rgba(196,170,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -592,27 +592,27 @@ const styles = StyleSheet.create({
   facultyName: {
     fontSize: 15,
     fontWeight: '800',
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
   },
   facultyRole: {
     fontSize: 12,
-    color: CampusTheme.colors.primary,
+    color: '#C4AAFF',
     marginTop: 2,
     fontWeight: '600',
   },
   facultySubjects: {
     fontSize: 12,
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     marginTop: 4,
   },
   facultyOffice: {
     fontSize: 11,
-    color: CampusTheme.colors.textDim,
+    color: 'rgba(255,255,255,0.3)',
     marginTop: 2,
   },
   modal360Container: {
     flex: 1,
-    backgroundColor: CampusTheme.colors.background,
+    backgroundColor: '#0A0010',
   },
   modal360Header: {
     flexDirection: 'row',
@@ -626,11 +626,11 @@ const styles = StyleSheet.create({
   modal360Title: {
     fontSize: 18,
     fontWeight: '800',
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
   },
   modal360Floor: {
     fontSize: 12,
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     marginTop: 2,
   },
   modal360CloseBtn: {
@@ -645,7 +645,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#0E1713',
+    backgroundColor: '#0D0018',
   },
   modal360Center: {
     alignItems: 'center',
@@ -655,13 +655,13 @@ const styles = StyleSheet.create({
   modal360Prompt: {
     fontSize: 16,
     fontWeight: '800',
-    color: CampusTheme.colors.primary,
+    color: '#C4AAFF',
     marginTop: 16,
     letterSpacing: 1,
   },
   modal360Desc: {
     fontSize: 13,
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     textAlign: 'center',
     lineHeight: 20,
     marginTop: 8,
@@ -672,13 +672,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: CampusTheme.colors.primary,
+    backgroundColor: '#9B5CFF',
     borderRadius: 14,
     paddingVertical: 14,
     paddingHorizontal: 24,
   },
   externalLaunchBtnText: {
-    color: CampusTheme.colors.background,
+    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '800',
   },
@@ -690,13 +690,13 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   roomModalCard: {
-    backgroundColor: '#14231B',
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: 22,
     padding: 24,
     width: '100%',
     maxWidth: 440,
     borderWidth: 1,
-    borderColor: CampusTheme.colors.cardBorder,
+    borderColor: 'rgba(196,170,255,0.15)',
   },
   roomModalTop: {
     flexDirection: 'row',
@@ -707,24 +707,24 @@ const styles = StyleSheet.create({
   roomModalTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
     marginBottom: 6,
   },
   roomModalBreadcrumb: {
     fontSize: 13,
-    color: CampusTheme.colors.primary,
+    color: '#C4AAFF',
     marginBottom: 12,
     fontWeight: '600',
   },
   roomModalDesc: {
     fontSize: 14,
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     lineHeight: 20,
     marginBottom: 14,
   },
   roomModalCapacity: {
     fontSize: 12,
-    color: CampusTheme.colors.textDim,
+    color: 'rgba(255,255,255,0.3)',
     marginBottom: 20,
   },
   roomModalActions: {
@@ -735,12 +735,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: CampusTheme.colors.primary,
+    backgroundColor: '#9B5CFF',
     borderRadius: 12,
     paddingVertical: 12,
   },
   roomModal360BtnText: {
-    color: CampusTheme.colors.background,
+    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '800',
   },
@@ -749,7 +749,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   roomModalDismissText: {
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     fontSize: 14,
     fontWeight: '600',
   },

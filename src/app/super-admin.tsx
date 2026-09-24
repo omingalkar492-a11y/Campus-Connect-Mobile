@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+﻿import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import {
@@ -192,7 +192,7 @@ export default function SuperAdminScreen() {
             <Text style={styles.statLabel}>Active Campuses</Text>
           </View>
           <View style={styles.statBox}>
-            <Text style={[styles.statValue, { color: CampusTheme.colors.primary }]}>
+            <Text style={[styles.statValue, { color: '#C4AAFF' }]}>
               {collegeAdmins.length}
             </Text>
             <Text style={styles.statLabel}>College Admin IDs</Text>
@@ -265,7 +265,7 @@ export default function SuperAdminScreen() {
             style={styles.addAdminHeaderBtn}
             onPress={() => handleOpenAddModal()}
           >
-            <Ionicons name="add-circle" size={16} color="#0E1713" />
+            <Ionicons name="add-circle" size={16} color="#0D0018" />
             <Text style={styles.addAdminHeaderBtnText}>+ Add College Admin ID</Text>
           </Pressable>
         </View>
@@ -321,7 +321,7 @@ export default function SuperAdminScreen() {
               style={styles.emptyAddBtn}
               onPress={() => handleOpenAddModal(filterCollegeId !== 'all' ? filterCollegeId : undefined)}
             >
-              <Ionicons name="add" size={16} color="#0E1713" />
+              <Ionicons name="add" size={16} color="#0D0018" />
               <Text style={styles.emptyAddBtnText}>Create College Admin ID</Text>
             </Pressable>
           </View>
@@ -556,7 +556,7 @@ export default function SuperAdminScreen() {
                     handleOpenAddModal(cid);
                   }}
                 >
-                  <Ionicons name="add" size={14} color="#0E1713" />
+                  <Ionicons name="add" size={14} color="#0D0018" />
                   <Text style={styles.tenantAddBtnText}>+ Add Admin</Text>
                 </Pressable>
               </View>
@@ -611,7 +611,7 @@ export default function SuperAdminScreen() {
 const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
-    backgroundColor: CampusTheme.colors.background,
+    backgroundColor: '#0A0010',
   },
   header: {
     flexDirection: 'row',
@@ -620,9 +620,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 50,
     paddingBottom: 16,
-    backgroundColor: '#0E1713',
+    backgroundColor: '#0D0018',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(142, 228, 175, 0.12)',
+    borderBottomColor: 'rgba(196,170,255,0.12)',
   },
   headerLeft: {
     flexDirection: 'row',
@@ -645,7 +645,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 13,
     fontWeight: '800',
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
     letterSpacing: 0.5,
   },
   superBadge: {
@@ -664,7 +664,7 @@ const styles = StyleSheet.create({
   },
   headerSub: {
     fontSize: 11,
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     marginTop: 2,
   },
   headerRight: {
@@ -679,12 +679,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
-    backgroundColor: '#162820',
+    backgroundColor: 'rgba(196,170,255,0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.2)',
+    borderColor: 'rgba(196,170,255,0.2)',
   },
   portalBtnText: {
-    color: CampusTheme.colors.primary,
+    color: '#C4AAFF',
     fontSize: 11,
     fontWeight: '700',
   },
@@ -708,22 +708,22 @@ const styles = StyleSheet.create({
   },
   statBox: {
     flex: 1,
-    backgroundColor: '#13221A',
+    backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 14,
     padding: 12,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.1)',
+    borderColor: 'rgba(196,170,255,0.1)',
   },
   statValue: {
     fontSize: 20,
     fontWeight: '800',
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
   },
   statLabel: {
     fontSize: 10,
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     marginTop: 2,
     textAlign: 'center',
     fontWeight: '600',
@@ -737,24 +737,24 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
   },
   sectionSub: {
     fontSize: 12,
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     marginTop: 2,
   },
   addAdminHeaderBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: CampusTheme.colors.primary,
+    backgroundColor: '#9B5CFF',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
   },
   addAdminHeaderBtnText: {
-    color: '#0E1713',
+    color: '#0D0018',
     fontSize: 11,
     fontWeight: '800',
   },
@@ -762,11 +762,11 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   collegeCard: {
-    backgroundColor: '#15251E',
+    backgroundColor: 'rgba(196,170,255,0.06)',
     borderRadius: 18,
     padding: 18,
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.15)',
+    borderColor: 'rgba(196,170,255,0.15)',
     ...CampusTheme.shadows.card,
   },
   collegeTop: {
@@ -779,16 +779,16 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: '#1A3327',
+    backgroundColor: 'rgba(196,170,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: CampusTheme.colors.primary,
+    bordercolor: '#C4AAFF',
   },
   collegeCode: {
     fontSize: 12,
     fontWeight: '900',
-    color: CampusTheme.colors.primary,
+    color: '#C4AAFF',
   },
   collegeInfo: {
     flex: 1,
@@ -796,15 +796,15 @@ const styles = StyleSheet.create({
   collegeName: {
     fontSize: 15,
     fontWeight: '800',
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
   },
   collegeLocation: {
     fontSize: 12,
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     marginTop: 2,
   },
   activePill: {
-    backgroundColor: CampusTheme.colors.primaryDim,
+    backgroundColor: 'rgba(196,170,255,0.12)',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
@@ -812,11 +812,11 @@ const styles = StyleSheet.create({
   activePillText: {
     fontSize: 10,
     fontWeight: '800',
-    color: CampusTheme.colors.primary,
+    color: '#C4AAFF',
   },
   collegeTagline: {
     fontSize: 12,
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     fontStyle: 'italic',
     marginBottom: 12,
   },
@@ -833,11 +833,11 @@ const styles = StyleSheet.create({
   },
   tenantIdText: {
     fontSize: 11,
-    color: CampusTheme.colors.textDim,
+    color: 'rgba(255,255,255,0.3)',
   },
   tenantAdminCount: {
     fontSize: 11,
-    color: CampusTheme.colors.primary,
+    color: '#C4AAFF',
     fontWeight: '700',
     marginTop: 2,
   },
@@ -845,17 +845,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#1C3328',
+    backgroundColor: 'rgba(196,170,255,0.1)',
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.2)',
+    borderColor: 'rgba(196,170,255,0.2)',
   },
   manageBtnText: {
     fontSize: 11,
     fontWeight: '700',
-    color: CampusTheme.colors.primary,
+    color: '#C4AAFF',
   },
   filterBar: {
     flexDirection: 'row',
@@ -865,43 +865,43 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 20,
-    backgroundColor: '#13221A',
+    backgroundColor: 'rgba(255,255,255,0.05)',
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.1)',
+    borderColor: 'rgba(196,170,255,0.1)',
     marginRight: 8,
   },
   activeFilterPill: {
-    backgroundColor: CampusTheme.colors.primaryDim,
-    borderColor: CampusTheme.colors.primary,
+    backgroundColor: 'rgba(196,170,255,0.12)',
+    bordercolor: '#C4AAFF',
   },
   filterPillText: {
     fontSize: 12,
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     fontWeight: '600',
   },
   activeFilterPillText: {
-    color: CampusTheme.colors.primary,
+    color: '#C4AAFF',
     fontWeight: '800',
   },
   emptyAdminsCard: {
-    backgroundColor: '#13221A',
+    backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 16,
     padding: 24,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.1)',
+    borderColor: 'rgba(196,170,255,0.1)',
     marginVertical: 10,
   },
   emptyAdminsTitle: {
     fontSize: 15,
     fontWeight: '800',
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
     marginTop: 10,
   },
   emptyAdminsSub: {
     fontSize: 12,
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     textAlign: 'center',
     marginTop: 4,
     maxWidth: 400,
@@ -910,7 +910,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: CampusTheme.colors.primary,
+    backgroundColor: '#9B5CFF',
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 8,
@@ -919,7 +919,7 @@ const styles = StyleSheet.create({
   emptyAddBtnText: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#0E1713',
+    color: '#0D0018',
   },
   adminsList: {
     gap: 10,
@@ -929,11 +929,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#13221A',
+    backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.12)',
+    borderColor: 'rgba(196,170,255,0.12)',
   },
   adminCardLeft: {
     flexDirection: 'row',
@@ -945,16 +945,16 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 10,
-    backgroundColor: '#1E382B',
+    backgroundColor: 'rgba(196,170,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: CampusTheme.colors.primary,
+    bordercolor: '#C4AAFF',
   },
   adminInitial: {
     fontSize: 15,
     fontWeight: '800',
-    color: CampusTheme.colors.primary,
+    color: '#C4AAFF',
   },
   adminDetails: {
     flex: 1,
@@ -967,7 +967,7 @@ const styles = StyleSheet.create({
   adminName: {
     fontSize: 14,
     fontWeight: '800',
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
   },
   adminBadge: {
     backgroundColor: 'rgba(251, 191, 36, 0.15)',
@@ -984,12 +984,12 @@ const styles = StyleSheet.create({
   },
   adminEmail: {
     fontSize: 12,
-    color: CampusTheme.colors.primary,
+    color: '#C4AAFF',
     marginTop: 2,
   },
   adminDesignation: {
     fontSize: 11,
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     marginTop: 2,
   },
   adminCollegeTag: {
@@ -1000,7 +1000,7 @@ const styles = StyleSheet.create({
   },
   adminCollegeTagText: {
     fontSize: 11,
-    color: CampusTheme.colors.textDim,
+    color: 'rgba(255,255,255,0.3)',
     fontWeight: '600',
   },
   deleteAdminBtn: {
@@ -1027,23 +1027,23 @@ const styles = StyleSheet.create({
   },
   statusCard: {
     flex: 1,
-    backgroundColor: '#15251E',
+    backgroundColor: 'rgba(196,170,255,0.06)',
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.12)',
+    borderColor: 'rgba(196,170,255,0.12)',
     alignItems: 'center',
   },
   statusTitle: {
     fontSize: 13,
     fontWeight: '800',
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
     marginTop: 8,
     textAlign: 'center',
   },
   statusSub: {
     fontSize: 11,
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     marginTop: 4,
     textAlign: 'center',
     lineHeight: 16,
@@ -1060,10 +1060,10 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 520,
     maxHeight: '85%',
-    backgroundColor: '#13221A',
+    backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.2)',
+    borderColor: 'rgba(196,170,255,0.2)',
     padding: 20,
   },
   modalHeader: {
@@ -1078,11 +1078,11 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
   },
   modalSub: {
     fontSize: 11,
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     marginTop: 2,
   },
   modalCloseBtn: {
@@ -1094,7 +1094,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
     marginBottom: 6,
     marginTop: 10,
   },
@@ -1108,31 +1108,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 8,
-    backgroundColor: '#0E1713',
+    backgroundColor: '#0D0018',
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.15)',
+    borderColor: 'rgba(196,170,255,0.15)',
   },
   modalCollegePillActive: {
-    backgroundColor: CampusTheme.colors.primaryDim,
-    borderColor: CampusTheme.colors.primary,
+    backgroundColor: 'rgba(196,170,255,0.12)',
+    bordercolor: '#C4AAFF',
   },
   modalCollegePillText: {
     fontSize: 11,
     fontWeight: '700',
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
   },
   modalCollegePillTextActive: {
-    color: CampusTheme.colors.primary,
+    color: '#C4AAFF',
   },
   textInput: {
-    backgroundColor: '#0E1713',
+    backgroundColor: '#0D0018',
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
     fontSize: 13,
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.15)',
+    borderColor: 'rgba(196,170,255,0.15)',
     marginBottom: 6,
   },
   passwordInputRow: {
@@ -1143,25 +1143,25 @@ const styles = StyleSheet.create({
   },
   eyeBtn: {
     padding: 10,
-    backgroundColor: '#0E1713',
+    backgroundColor: '#0D0018',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.15)',
+    borderColor: 'rgba(196,170,255,0.15)',
   },
   modalInfoBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 8,
-    backgroundColor: '#0E1713',
+    backgroundColor: '#0D0018',
     borderRadius: 10,
     padding: 12,
     marginVertical: 12,
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.1)',
+    borderColor: 'rgba(196,170,255,0.1)',
   },
   modalInfoText: {
     fontSize: 11,
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     flex: 1,
     lineHeight: 16,
   },
@@ -1170,7 +1170,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: CampusTheme.colors.primary,
+    backgroundColor: '#9B5CFF',
     borderRadius: 12,
     paddingVertical: 13,
     marginTop: 6,
@@ -1179,7 +1179,7 @@ const styles = StyleSheet.create({
   modalSubmitBtnText: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#0E1713',
+    color: '#0D0018',
   },
   tenantModalHeaderRow: {
     flexDirection: 'row',
@@ -1190,13 +1190,13 @@ const styles = StyleSheet.create({
   tenantSectionTitle: {
     fontSize: 13,
     fontWeight: '800',
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
   },
   tenantAddBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: CampusTheme.colors.primary,
+    backgroundColor: '#9B5CFF',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 6,
@@ -1204,25 +1204,25 @@ const styles = StyleSheet.create({
   tenantAddBtnText: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#0E1713',
+    color: '#0D0018',
   },
   tenantEmptyBox: {
     padding: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#0E1713',
+    backgroundColor: '#0D0018',
     borderRadius: 12,
     marginTop: 8,
   },
   tenantEmptyTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
     marginTop: 8,
   },
   tenantEmptySub: {
     fontSize: 11,
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     textAlign: 'center',
     marginTop: 2,
   },
@@ -1230,25 +1230,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#0E1713',
+    backgroundColor: '#0D0018',
     borderRadius: 10,
     padding: 12,
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.1)',
+    borderColor: 'rgba(196,170,255,0.1)',
   },
   tenantAdminName: {
     fontSize: 13,
     fontWeight: '700',
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
   },
   tenantAdminEmail: {
     fontSize: 11,
-    color: CampusTheme.colors.primary,
+    color: '#C4AAFF',
     marginTop: 1,
   },
   tenantAdminDesig: {
     fontSize: 10,
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     marginTop: 1,
   },
   deleteAdminSmallBtn: {

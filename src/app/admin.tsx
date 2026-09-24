@@ -2209,7 +2209,7 @@ export default function CollegeAdminScreen() {
 const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
-    backgroundColor: CampusTheme.colors.background,
+    backgroundColor: '#0A0010',
   },
   header: {
     flexDirection: 'row',
@@ -2218,9 +2218,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 50,
     paddingBottom: 16,
-    backgroundColor: '#0E1713',
+    backgroundColor: '#0D0018',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(142, 228, 175, 0.12)',
+    borderBottomColor: 'rgba(196,170,255,0.12)',
   },
   headerLeft: {
     flexDirection: 'row',
@@ -2231,19 +2231,19 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: CampusTheme.colors.warning,
+    backgroundColor: '#9B5CFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 14,
     fontWeight: '800',
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
     letterSpacing: 0.5,
   },
   headerSub: {
     fontSize: 11,
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     marginTop: 1,
   },
   headerRight: {
@@ -2258,12 +2258,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
-    backgroundColor: '#162820',
+    backgroundColor: 'rgba(196,170,255,0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.2)',
+    borderColor: 'rgba(196,170,255,0.2)',
   },
   portalBtnText: {
-    color: CampusTheme.colors.primary,
+    color: '#C4AAFF',
     fontSize: 11,
     fontWeight: '700',
   },
@@ -2271,7 +2271,7 @@ const styles = StyleSheet.create({
     padding: 6,
   },
   tabsBar: {
-    backgroundColor: '#0F1A14',
+    backgroundColor: '#0D0018',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.05)',
   },
@@ -2287,18 +2287,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 10,
-    backgroundColor: '#162820',
+    backgroundColor: 'rgba(196,170,255,0.08)',
   },
   activeTabItem: {
-    backgroundColor: CampusTheme.colors.primary,
+    backgroundColor: '#9B5CFF',
   },
   tabLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
   },
   activeTabLabel: {
-    color: CampusTheme.colors.background,
+    color: '#FFFFFF',
     fontWeight: '800',
   },
   container: {
@@ -2315,11 +2315,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
   },
   sectionSub: {
     fontSize: 13,
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     marginTop: 2,
     marginBottom: 16,
   },
@@ -2331,11 +2331,11 @@ const styles = StyleSheet.create({
   metricCardInteractive: {
     flex: 1,
     minWidth: '45%',
-    backgroundColor: '#14231B',
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: 18,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.15)',
+    borderColor: 'rgba(196,170,255,0.15)',
   },
   metricHeaderRow: {
     flexDirection: 'row',
@@ -2345,18 +2345,18 @@ const styles = StyleSheet.create({
   metricNumber: {
     fontSize: 30,
     fontWeight: '900',
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
     marginTop: 10,
   },
   metricLabel: {
     fontSize: 13,
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     fontWeight: '700',
     marginTop: 2,
   },
   metricHint: {
     fontSize: 10,
-    color: CampusTheme.colors.primary,
+    color: '#C4AAFF',
     fontWeight: '700',
     marginTop: 6,
   },
@@ -2369,17 +2369,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#14231B',
+    backgroundColor: 'rgba(255,255,255,0.06)',
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.15)',
+    borderColor: 'rgba(196,170,255,0.15)',
   },
   actionCardText: {
     fontSize: 13,
     fontWeight: '700',
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
   },
   rowBetween: {
     flexDirection: 'row',
@@ -2391,7 +2391,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: CampusTheme.colors.primary,
+    backgroundColor: '#9B5CFF',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 10,
@@ -2405,17 +2405,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: '#162820',
+    backgroundColor: 'rgba(196,170,255,0.08)',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.25)',
+    borderColor: 'rgba(196,170,255,0.25)',
   },
   secondaryBtnText: {
     fontSize: 12,
     fontWeight: '700',
-    color: CampusTheme.colors.primary,
+    color: '#C4AAFF',
   },
   deptFilterRow: {
     paddingVertical: 8,
@@ -2426,21 +2426,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
-    backgroundColor: '#162820',
+    backgroundColor: 'rgba(196,170,255,0.08)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   filterPillActive: {
-    backgroundColor: CampusTheme.colors.primary,
-    borderColor: CampusTheme.colors.primary,
+    backgroundColor: '#9B5CFF',
+    bordercolor: '#C4AAFF',
   },
   filterPillText: {
     fontSize: 11,
     fontWeight: '700',
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
   },
   filterPillTextActive: {
-    color: '#0D1411',
+    color: '#FFFFFF',
     fontWeight: '800',
   },
   listContainer: {
@@ -2450,11 +2450,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 12,
-    backgroundColor: '#14231B',
+    backgroundColor: 'rgba(255,255,255,0.06)',
     padding: 16,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.12)',
+    borderColor: 'rgba(196,170,255,0.12)',
   },
   itemIconBox: {
     width: 44,
@@ -2470,11 +2470,11 @@ const styles = StyleSheet.create({
   itemName: {
     fontSize: 15,
     fontWeight: '800',
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
   },
   itemMeta: {
     fontSize: 12,
-    color: CampusTheme.colors.primary,
+    color: '#C4AAFF',
     marginTop: 2,
     fontWeight: '600',
   },
@@ -2487,11 +2487,11 @@ const styles = StyleSheet.create({
   teacherInChargeText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#A3D9BE',
+    color: '#C4AAFF',
   },
   itemDesc: {
     fontSize: 12,
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     marginTop: 4,
   },
   roomBadge: {
@@ -2503,7 +2503,7 @@ const styles = StyleSheet.create({
   roomBadgeText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#A3D9BE',
+    color: '#C4AAFF',
   },
   cardActionsCol: {
     gap: 8,
@@ -2515,11 +2515,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#1B2E24',
   },
   canteenOwnerCard: {
-    backgroundColor: '#14231B',
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: 18,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.15)',
+    borderColor: 'rgba(196,170,255,0.15)',
   },
   ownerHeaderRow: {
     flexDirection: 'row',
@@ -2537,15 +2537,15 @@ const styles = StyleSheet.create({
   ownerName: {
     fontSize: 16,
     fontWeight: '800',
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
   },
   ownerSub: {
     fontSize: 12,
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     marginTop: 1,
   },
   activeTag: {
-    backgroundColor: CampusTheme.colors.primaryDim,
+    backgroundColor: 'rgba(196,170,255,0.12)',
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -2553,10 +2553,10 @@ const styles = StyleSheet.create({
   activeTagText: {
     fontSize: 10,
     fontWeight: '800',
-    color: CampusTheme.colors.primary,
+    color: '#C4AAFF',
   },
   credentialsGrid: {
-    backgroundColor: '#0F1A14',
+    backgroundColor: '#0D0018',
     borderRadius: 12,
     padding: 12,
     marginVertical: 12,
@@ -2571,12 +2571,12 @@ const styles = StyleSheet.create({
   },
   credLabel: {
     fontSize: 12,
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     fontWeight: '600',
   },
   credValue: {
     fontSize: 13,
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
     fontWeight: '700',
   },
   ownerActionRow: {
@@ -2593,12 +2593,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.2)',
+    borderColor: 'rgba(196,170,255,0.2)',
   },
   editActionBtnText: {
     fontSize: 12,
     fontWeight: '700',
-    color: CampusTheme.colors.primary,
+    color: '#C4AAFF',
   },
   deleteActionBtn: {
     flexDirection: 'row',
@@ -2621,11 +2621,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 12,
-    backgroundColor: '#14231B',
+    backgroundColor: 'rgba(255,255,255,0.06)',
     padding: 16,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.12)',
+    borderColor: 'rgba(196,170,255,0.12)',
   },
   contactRow: {
     flexDirection: 'row',
@@ -2636,12 +2636,12 @@ const styles = StyleSheet.create({
   contactPhone: {
     fontSize: 12,
     fontWeight: '700',
-    color: CampusTheme.colors.primary,
+    color: '#C4AAFF',
   },
   contactEmail: {
     fontSize: 12,
     fontWeight: '600',
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
   },
   classTeacherBadge: {
     backgroundColor: '#1E3528',
@@ -2649,22 +2649,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderWidth: 1,
-    borderColor: CampusTheme.colors.primary,
+    bordercolor: '#C4AAFF',
   },
   classTeacherBadgeText: {
     fontSize: 9,
     fontWeight: '800',
-    color: CampusTheme.colors.primary,
+    color: '#C4AAFF',
   },
   noticeCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 12,
-    backgroundColor: '#14231B',
+    backgroundColor: 'rgba(255,255,255,0.06)',
     padding: 16,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.12)',
+    borderColor: 'rgba(196,170,255,0.12)',
   },
   categoryBadge: {
     backgroundColor: '#1C3528',
@@ -2680,7 +2680,7 @@ const styles = StyleSheet.create({
   venueText: {
     fontSize: 11,
     fontWeight: '600',
-    color: CampusTheme.colors.primary,
+    color: '#C4AAFF',
   },
   emptyBox: {
     alignItems: 'center',
@@ -2690,15 +2690,15 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 13,
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
   },
   // 360 card
   itemCard360: {
-    backgroundColor: '#14231B',
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.15)',
+    borderColor: 'rgba(196,170,255,0.15)',
   },
   itemTopRow360: {
     flexDirection: 'row',
@@ -2716,7 +2716,7 @@ const styles = StyleSheet.create({
   },
   urlChipText: {
     fontSize: 10,
-    color: CampusTheme.colors.primary,
+    color: '#C4AAFF',
     fontWeight: '600',
   },
   itemBottomActions360: {
@@ -2732,7 +2732,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: CampusTheme.colors.primary,
+    backgroundColor: '#9B5CFF',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
@@ -2740,18 +2740,18 @@ const styles = StyleSheet.create({
   previewInPageBtnText: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#0D1411',
+    color: '#FFFFFF',
   },
   deleteSpotBtn: {
     padding: 6,
   },
   // Staff card
   staffCard: {
-    backgroundColor: '#14231B',
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.15)',
+    borderColor: 'rgba(196,170,255,0.15)',
   },
   staffHeaderRow: {
     flexDirection: 'row',
@@ -2769,11 +2769,11 @@ const styles = StyleSheet.create({
   staffName: {
     fontSize: 14,
     fontWeight: '800',
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
   },
   staffMeta: {
     fontSize: 11,
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
   },
   roleTag: {
     backgroundColor: '#1E3528',
@@ -2784,13 +2784,13 @@ const styles = StyleSheet.create({
   roleTagText: {
     fontSize: 10,
     fontWeight: '700',
-    color: CampusTheme.colors.primary,
+    color: '#C4AAFF',
     textTransform: 'capitalize',
   },
   delegatedPowersHeading: {
     fontSize: 11,
     fontWeight: '700',
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     marginTop: 12,
     marginBottom: 6,
   },
@@ -2811,16 +2811,16 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   powerToggleBtnActive: {
-    backgroundColor: CampusTheme.colors.primary,
-    borderColor: CampusTheme.colors.primary,
+    backgroundColor: '#9B5CFF',
+    bordercolor: '#C4AAFF',
   },
   powerToggleText: {
     fontSize: 11,
     fontWeight: '600',
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
   },
   powerToggleTextActive: {
-    color: '#0D1411',
+    color: '#FFFFFF',
     fontWeight: '800',
   },
   roleChoiceBtn: {
@@ -2833,16 +2833,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   roleChoiceBtnActive: {
-    backgroundColor: CampusTheme.colors.primary,
-    borderColor: CampusTheme.colors.primary,
+    backgroundColor: '#9B5CFF',
+    bordercolor: '#C4AAFF',
   },
   roleChoiceText: {
     fontSize: 12,
     fontWeight: '600',
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
   },
   roleChoiceTextActive: {
-    color: '#0D1411',
+    color: '#FFFFFF',
     fontWeight: '800',
   },
   // Modals
@@ -2854,13 +2854,13 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalCard: {
-    backgroundColor: '#14231B',
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: 22,
     padding: 22,
     width: '100%',
     maxWidth: 480,
     borderWidth: 1,
-    borderColor: CampusTheme.colors.cardBorder,
+    borderColor: 'rgba(196,170,255,0.15)',
   },
   modalTop: {
     flexDirection: 'row',
@@ -2871,23 +2871,23 @@ const styles = StyleSheet.create({
   modalHeading: {
     fontSize: 18,
     fontWeight: '800',
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
   },
   inputLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     marginTop: 10,
     marginBottom: 4,
   },
   textInput: {
     backgroundColor: '#0E1712',
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.15)',
+    borderColor: 'rgba(196,170,255,0.15)',
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
     fontSize: 14,
   },
   choiceChip: {
@@ -2900,16 +2900,16 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   choiceChipActive: {
-    backgroundColor: CampusTheme.colors.primary,
-    borderColor: CampusTheme.colors.primary,
+    backgroundColor: '#9B5CFF',
+    bordercolor: '#C4AAFF',
   },
   choiceChipText: {
     fontSize: 11,
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     fontWeight: '600',
   },
   choiceChipTextActive: {
-    color: '#0D1411',
+    color: '#FFFFFF',
     fontWeight: '800',
   },
   checkboxRow: {
@@ -2922,20 +2922,20 @@ const styles = StyleSheet.create({
   checkboxLabel: {
     fontSize: 13,
     fontWeight: '700',
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
   },
   saveSpotBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: CampusTheme.colors.primary,
+    backgroundColor: '#9B5CFF',
     borderRadius: 12,
     paddingVertical: 14,
     marginTop: 18,
   },
   saveSpotBtnText: {
-    color: '#0D1411',
+    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '800',
   },
@@ -2949,12 +2949,12 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     fontSize: 12,
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     fontWeight: '600',
   },
   detailValue: {
     fontSize: 13,
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
     fontWeight: '700',
   },
   detailHighlightCard: {
@@ -2963,34 +2963,34 @@ const styles = StyleSheet.create({
     padding: 12,
     marginVertical: 10,
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.2)',
+    borderColor: 'rgba(196,170,255,0.2)',
   },
   detailHighlightTitle: {
     fontSize: 11,
     fontWeight: '700',
-    color: CampusTheme.colors.primary,
+    color: '#C4AAFF',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   detailTeacherName: {
     fontSize: 15,
     fontWeight: '800',
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
     marginTop: 4,
   },
   detailHighlightPhone: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#A3D9BE',
+    color: '#C4AAFF',
   },
   detailHighlightEmail: {
     fontSize: 12,
     fontWeight: '600',
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
   },
   detailDesc: {
     fontSize: 12,
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     lineHeight: 18,
     marginTop: 4,
   },
@@ -3005,14 +3005,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: CampusTheme.colors.primary,
+    backgroundColor: '#9B5CFF',
     paddingVertical: 10,
     borderRadius: 10,
   },
   modalEditBtnText: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#0D1411',
+    color: '#FFFFFF',
   },
   modalDeleteBtn: {
     flexDirection: 'row',
@@ -3037,20 +3037,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
-    backgroundColor: CampusTheme.colors.primary,
+    backgroundColor: '#9B5CFF',
     paddingHorizontal: 14,
     borderRadius: 10,
   },
   addDeptBtnText: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#0D1411',
+    color: '#FFFFFF',
   },
   deptItemRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#0F1A14',
+    backgroundColor: '#0D0018',
     padding: 10,
     borderRadius: 10,
     marginBottom: 6,
@@ -3060,11 +3060,11 @@ const styles = StyleSheet.create({
   deptItemName: {
     fontSize: 13,
     fontWeight: '700',
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
   },
   deptItemCode: {
     fontSize: 10,
-    color: CampusTheme.colors.primary,
+    color: '#C4AAFF',
     fontWeight: '600',
   },
   deleteDeptBtn: {

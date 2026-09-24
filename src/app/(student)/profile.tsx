@@ -28,28 +28,28 @@ export default function ProfileScreen() {
   };
 
   return (
-    <View style={[styles.safeContainer, { backgroundColor: colors.background }]}>
+    <View style={[styles.safeContainer, { backgroundColor: '#0A0010' }]}>
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.contentContainer}
       >
         {/* TOP PROFILE CARD */}
-        <View style={[styles.profileCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-          <View style={[styles.avatarCircle, { backgroundColor: colors.primary }]}>
-            <Text style={[styles.avatarInitial, { color: isDark ? '#0B110E' : '#FFFFFF' }]}>
+        <View style={[styles.profileCard, { backgroundColor: 'rgba(196,170,255,0.07)', borderColor: 'rgba(196,170,255,0.2)' }]}>
+          <View style={[styles.avatarCircle, { backgroundColor: '#9B5CFF' }]}>
+            <Text style={[styles.avatarInitial, { color: isDark ? '#FFFFFF' : '#FFFFFF' }]}>
               {profile?.name?.charAt(0).toUpperCase() || 'A'}
             </Text>
           </View>
 
-          <Text style={[styles.studentName, { color: colors.text }]}>
+          <Text style={[styles.studentName, { color: '#FFFFFF' }]}>
             {profile?.name || 'Aarav Kulkarni'}
           </Text>
-          <Text style={[styles.studentEmail, { color: colors.textMuted }]}>
+          <Text style={[styles.studentEmail, { color: 'rgba(255,255,255,0.45)' }]}>
             {profile?.email || 'student@jspm.edu'}
           </Text>
 
-          <View style={[styles.roleBadge, { backgroundColor: colors.primaryDim }]}>
-            <Text style={[styles.roleBadgeText, { color: colors.primary }]}>
+          <View style={[styles.roleBadge, { backgroundColor: 'rgba(196,170,255,0.12)' }]}>
+            <Text style={[styles.roleBadgeText, { color: '#C4AAFF' }]}>
               {profile?.role === 'student' ? 'Student' : profile?.role?.toUpperCase()}
             </Text>
           </View>
@@ -58,13 +58,13 @@ export default function ProfileScreen() {
         {/* SETTINGS SECTIONS */}
         <View style={styles.settingsGroup}>
           {/* Campus */}
-          <View style={[styles.settingItem, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-            <View style={[styles.settingIconBox, { backgroundColor: colors.primaryDim }]}>
-              <Ionicons name="business" size={20} color={colors.primary} />
+          <View style={[styles.settingItem, { backgroundColor: 'transparent', borderColor: 'rgba(196,170,255,0.1)' }]}>
+            <View style={[styles.settingIconBox, { backgroundColor: 'rgba(196,170,255,0.1)' }]}>
+              <Ionicons name="business" size={20} color="#C4AAFF" />
             </View>
             <View style={styles.settingContent}>
-              <Text style={[styles.settingTitle, { color: colors.text }]}>Campus</Text>
-              <Text style={[styles.settingValue, { color: colors.textMuted }]}>
+              <Text style={[styles.settingTitle, { color: '#FFFFFF' }]}>Campus</Text>
+              <Text style={[styles.settingValue, { color: 'rgba(255,255,255,0.45)' }]}>
                 {college?.shortName || 'JSPM Tathawade'} • {college?.city || 'Pune'}
               </Text>
             </View>
@@ -103,7 +103,7 @@ export default function ProfileScreen() {
               value={!isDark}
               onValueChange={toggleTheme}
               trackColor={{ false: '#2C4236', true: colors.primary }}
-              thumbColor={isDark ? '#0B110E' : '#FFFFFF'}
+              thumbColor={isDark ? '#FFFFFF' : '#FFFFFF'}
             />
           </View>
 
@@ -127,7 +127,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
-    backgroundColor: CampusTheme.colors.background,
+    backgroundColor: '#0A0010',
   },
   container: {
     flex: 1,
@@ -141,13 +141,13 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   profileCard: {
-    backgroundColor: '#192C23',
+    backgroundColor: 'rgba(196,170,255,0.07)',
     borderRadius: 24,
     paddingVertical: 26,
     paddingHorizontal: 20,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.2)',
+    borderColor: 'rgba(196,170,255,0.2)',
     marginBottom: 26,
     ...CampusTheme.shadows.card,
   },
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
     width: 68,
     height: 68,
     borderRadius: 34,
-    backgroundColor: '#8EE4AF',
+    backgroundColor: '#C4AAFF',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 14,
@@ -163,39 +163,39 @@ const styles = StyleSheet.create({
   avatarInitial: {
     fontSize: 28,
     fontWeight: '900',
-    color: '#0B110E',
+    color: '#FFFFFF',
   },
   studentName: {
     fontSize: 22,
     fontWeight: '800',
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
     marginBottom: 4,
   },
   studentEmail: {
     fontSize: 13,
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     marginBottom: 14,
   },
   roleBadge: {
-    backgroundColor: '#13211B',
+    backgroundColor: 'rgba(196,170,255,0.08)',
     borderRadius: 9999,
     paddingHorizontal: 14,
     paddingVertical: 5,
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.25)',
+    borderColor: 'rgba(196,170,255,0.25)',
   },
   roleBadgeText: {
     fontSize: 12,
     fontWeight: '800',
-    color: CampusTheme.colors.primary,
+    color: '#C4AAFF',
   },
   settingsGroup: {
-    backgroundColor: '#15251E',
+    backgroundColor: 'rgba(196,170,255,0.06)',
     borderRadius: 22,
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.12)',
+    borderColor: 'rgba(196,170,255,0.12)',
     marginBottom: 28,
     ...CampusTheme.shadows.card,
   },
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 12,
-    backgroundColor: '#1B3328',
+    backgroundColor: 'rgba(196,170,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -221,11 +221,11 @@ const styles = StyleSheet.create({
   settingTitle: {
     fontSize: 15,
     fontWeight: '800',
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
   },
   settingValue: {
     fontSize: 12,
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     marginTop: 2,
     fontWeight: '500',
   },
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     textAlign: 'center',
-    color: CampusTheme.colors.textDim,
+    color: 'rgba(255,255,255,0.3)',
     fontSize: 12,
     fontWeight: '500',
   },
@@ -260,13 +260,13 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalCard: {
-    backgroundColor: '#14231B',
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: 24,
     padding: 24,
     width: '100%',
     maxWidth: 480,
     borderWidth: 1,
-    borderColor: CampusTheme.colors.cardBorder,
+    borderColor: 'rgba(196,170,255,0.15)',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -277,11 +277,11 @@ const styles = StyleSheet.create({
   modalHeading: {
     fontSize: 18,
     fontWeight: '800',
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
   },
   modalDesc: {
     fontSize: 13,
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     lineHeight: 18,
     marginBottom: 18,
   },
@@ -292,11 +292,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#162820',
+    backgroundColor: 'rgba(196,170,255,0.08)',
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.12)',
+    borderColor: 'rgba(196,170,255,0.12)',
   },
   roleChoiceText: {
     flex: 1,
@@ -304,11 +304,11 @@ const styles = StyleSheet.create({
   roleChoiceName: {
     fontSize: 14,
     fontWeight: '700',
-    color: CampusTheme.colors.text,
+    color: '#FFFFFF',
   },
   roleChoiceSub: {
     fontSize: 12,
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.45)',
     marginTop: 2,
   },
 });
