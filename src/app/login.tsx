@@ -20,7 +20,7 @@ import { useAuth } from '@/context/auth-context';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
-// ─── Animated Orb ──────────────────────────────────────────────────────────
+// ─── Animated Orb ────────────────────────────────────────────────────────────
 function Orb({
   color,
   size,
@@ -54,64 +54,19 @@ function Orb({
     const animate = () => {
       Animated.parallel([
         Animated.sequence([
-          Animated.timing(posX, {
-            toValue: startX + rand(-120, 120),
-            duration,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: true,
-          }),
-          Animated.timing(posX, {
-            toValue: startX + rand(-120, 120),
-            duration,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: true,
-          }),
-          Animated.timing(posX, {
-            toValue: startX,
-            duration,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: true,
-          }),
+          Animated.timing(posX, { toValue: startX + rand(-120, 120), duration, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+          Animated.timing(posX, { toValue: startX + rand(-120, 120), duration, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+          Animated.timing(posX, { toValue: startX, duration, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
         ]),
         Animated.sequence([
-          Animated.timing(posY, {
-            toValue: startY + rand(-140, 140),
-            duration: duration * 1.15,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: true,
-          }),
-          Animated.timing(posY, {
-            toValue: startY + rand(-140, 140),
-            duration: duration * 1.15,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: true,
-          }),
-          Animated.timing(posY, {
-            toValue: startY,
-            duration: duration * 1.15,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: true,
-          }),
+          Animated.timing(posY, { toValue: startY + rand(-140, 140), duration: duration * 1.15, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+          Animated.timing(posY, { toValue: startY + rand(-140, 140), duration: duration * 1.15, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+          Animated.timing(posY, { toValue: startY, duration: duration * 1.15, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
         ]),
         Animated.sequence([
-          Animated.timing(scale, {
-            toValue: rand(0.85, 1.3),
-            duration: duration * 0.9,
-            easing: Easing.inOut(Easing.quad),
-            useNativeDriver: true,
-          }),
-          Animated.timing(scale, {
-            toValue: rand(0.75, 1.15),
-            duration: duration * 0.9,
-            easing: Easing.inOut(Easing.quad),
-            useNativeDriver: true,
-          }),
-          Animated.timing(scale, {
-            toValue: 1,
-            duration: duration * 0.9,
-            easing: Easing.inOut(Easing.quad),
-            useNativeDriver: true,
-          }),
+          Animated.timing(scale, { toValue: rand(0.85, 1.3), duration: duration * 0.9, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+          Animated.timing(scale, { toValue: rand(0.75, 1.15), duration: duration * 0.9, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+          Animated.timing(scale, { toValue: 1, duration: duration * 0.9, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
         ]),
       ]).start(animate);
     };
@@ -137,7 +92,7 @@ function Orb({
   );
 }
 
-// ─── Glass Input ────────────────────────────────────────────────────────────
+// ─── Glass Input ─────────────────────────────────────────────────────────────
 function GlassInput({
   icon,
   placeholder,
@@ -145,7 +100,6 @@ function GlassInput({
   onChangeText,
   secureTextEntry,
   keyboardType,
-  autoCapitalize,
 }: {
   icon: any;
   placeholder: string;
@@ -153,51 +107,29 @@ function GlassInput({
   onChangeText: (v: string) => void;
   secureTextEntry?: boolean;
   keyboardType?: any;
-  autoCapitalize?: any;
 }) {
   const [focused, setFocused] = useState(false);
   const focusAnim = useRef(new Animated.Value(0)).current;
 
-  const handleFocus = () => {
+  const onFocus = () => {
     setFocused(true);
-    Animated.timing(focusAnim, {
-      toValue: 1,
-      duration: 220,
-      useNativeDriver: false,
-    }).start();
+    Animated.timing(focusAnim, { toValue: 1, duration: 200, useNativeDriver: false }).start();
   };
-
-  const handleBlur = () => {
+  const onBlur = () => {
     setFocused(false);
-    Animated.timing(focusAnim, {
-      toValue: 0,
-      duration: 220,
-      useNativeDriver: false,
-    }).start();
+    Animated.timing(focusAnim, { toValue: 0, duration: 200, useNativeDriver: false }).start();
   };
 
-  const borderColor = focusAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['rgba(255,255,255,0.15)', 'rgba(168,130,255,0.75)'],
-  });
-
-  const bgColor = focusAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['rgba(255,255,255,0.06)', 'rgba(168,130,255,0.1)'],
-  });
+  const borderColor = focusAnim.interpolate({ inputRange: [0, 1], outputRange: ['rgba(255,255,255,0.14)', 'rgba(196,170,255,0.75)'] });
+  const bgColor = focusAnim.interpolate({ inputRange: [0, 1], outputRange: ['rgba(255,255,255,0.06)', 'rgba(196,170,255,0.1)'] });
 
   return (
-    <Animated.View
-      style={[
-        styles.glassInputWrap,
-        { borderColor, backgroundColor: bgColor },
-      ]}
-    >
+    <Animated.View style={[styles.glassInputWrap, { borderColor, backgroundColor: bgColor }]}>
       <Ionicons
         name={icon}
         size={18}
-        color={focused ? '#C4AAFF' : 'rgba(255,255,255,0.4)'}
-        style={styles.inputIcon}
+        color={focused ? '#C4AAFF' : 'rgba(255,255,255,0.38)'}
+        style={{ marginRight: 10 }}
       />
       <TextInput
         style={styles.glassInput}
@@ -205,29 +137,27 @@ function GlassInput({
         placeholderTextColor="rgba(255,255,255,0.28)"
         value={value}
         onChangeText={onChangeText}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
+        onFocus={onFocus}
+        onBlur={onBlur}
         secureTextEntry={secureTextEntry}
         keyboardType={keyboardType || 'default'}
-        autoCapitalize={autoCapitalize || 'none'}
+        autoCapitalize="none"
         autoCorrect={false}
       />
     </Animated.View>
   );
 }
 
-// ─── Main Login Screen ───────────────────────────────────────────────────────
+// ─── Main Login Screen ────────────────────────────────────────────────────────
 export default function LoginScreen() {
   const router = useRouter();
   const { login, loginWithGoogle } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<'student' | 'staff'>('student');
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const [showPasswordHint, setShowPasswordHint] = useState(false);
 
   // Card entrance animation
   const cardAnim = useRef(new Animated.Value(0)).current;
@@ -235,20 +165,8 @@ export default function LoginScreen() {
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(cardAnim, {
-        toValue: 1,
-        duration: 700,
-        delay: 300,
-        easing: Easing.out(Easing.back(1.1)),
-        useNativeDriver: true,
-      }),
-      Animated.spring(cardScale, {
-        toValue: 1,
-        delay: 300,
-        tension: 65,
-        friction: 9,
-        useNativeDriver: true,
-      }),
+      Animated.timing(cardAnim, { toValue: 1, duration: 700, delay: 300, easing: Easing.out(Easing.back(1.1)), useNativeDriver: true }),
+      Animated.spring(cardScale, { toValue: 1, delay: 300, tension: 65, friction: 9, useNativeDriver: true }),
     ]).start();
   }, []);
 
@@ -256,47 +174,27 @@ export default function LoginScreen() {
     const code = err?.code || '';
     const rawMsg = err?.message || (typeof err === 'string' ? err : '');
     const extracted = code || (rawMsg.match(/\((auth\/[^)]+)\)/)?.[1] || '');
-
-    if (extracted === 'auth/too-many-requests') {
-      return '🔒 Account temporarily locked. Please try with Google or wait a few minutes.';
-    }
-    if (['auth/user-not-found', 'auth/wrong-password', 'auth/invalid-credential'].includes(extracted)) {
-      return '❌ Incorrect email or password. Please check your credentials.';
-    }
+    if (extracted === 'auth/too-many-requests') return '🔒 Account temporarily locked. Try again in a few minutes.';
+    if (['auth/user-not-found', 'auth/wrong-password', 'auth/invalid-credential'].includes(extracted))
+      return '❌ Incorrect email/ID or password. Please check and try again.';
     if (extracted === 'auth/invalid-email') return '⚠️ Please enter a valid email address.';
     if (extracted === 'auth/network-request-failed') return '📡 Network error. Check your connection.';
     if (['auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(extracted)) return '';
     if (extracted === 'auth/popup-blocked') return '🚫 Popup blocked. Allow popups and try again.';
-    if (extracted === 'auth/account-exists-with-different-credential') {
-      return '⚠️ Account exists with a different sign-in method. Use email/password.';
-    }
-
-    const cleaned = rawMsg
-      .replace(/^(FirebaseError|Firebase|Error):\s*/gi, '')
-      .replace(/\(auth\/[^)]+\)\.?/g, '')
-      .trim();
-
+    const cleaned = rawMsg.replace(/^(FirebaseError|Firebase|Error):\s*/gi, '').replace(/\(auth\/[^)]+\)\.?/g, '').trim();
     if (cleaned && cleaned.toLowerCase() !== 'error') return cleaned;
-    return '❌ Authentication failed. Please verify your credentials.';
+    return '❌ Sign in failed. Please check your credentials.';
   };
 
   const handleLogin = async () => {
     setErrorMsg('');
-    const cleanEmail = email.trim();
+    const cleanId = identifier.trim();
     const cleanPass = password.trim();
-
-    if (!cleanEmail || !cleanPass) {
-      setErrorMsg('Please enter your email / ID and password.');
-      return;
-    }
-    if (cleanPass.length < 6) {
-      setErrorMsg('Password must be at least 6 characters.');
-      return;
-    }
-
+    if (!cleanId || !cleanPass) { setErrorMsg('Please enter your email / ID and password.'); return; }
+    if (cleanPass.length < 6) { setErrorMsg('Password must be at least 6 characters.'); return; }
     try {
       setSubmitting(true);
-      await login(cleanEmail, cleanPass);
+      await login(cleanId, cleanPass);
       router.replace('/' as any);
     } catch (err: any) {
       const msg = getFriendlyError(err);
@@ -320,37 +218,34 @@ export default function LoginScreen() {
     }
   };
 
+  const cardTranslateY = cardAnim.interpolate({ inputRange: [0, 1], outputRange: [40, 0] });
+
   return (
     <View style={styles.root}>
-      {/* ── 3D Animated Orb Background ─────────────────────────── */}
+      {/* ── 3D Animated Orbs ─────────────────────────────────────────── */}
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
-        <Orb color="#C84BFF" size={320} startX={-80} startY={-60} duration={7000} delay={0} />
-        <Orb color="#FF4BA6" size={260} startX={SCREEN_W - 140} startY={60} duration={8500} delay={300} />
-        <Orb color="#FF8A3D" size={180} startX={SCREEN_W - 60} startY={SCREEN_H - 180} duration={6200} delay={600} />
-        <Orb color="#4B8EFF" size={210} startX={-40} startY={SCREEN_H - 220} duration={9000} delay={900} />
-        <Orb color="#FF4BD8" size={130} startX={SCREEN_W / 2 - 60} startY={SCREEN_H * 0.35} duration={5400} delay={400} />
-        <Orb color="#7B4BFF" size={160} startX={SCREEN_W * 0.65} startY={SCREEN_H * 0.55} duration={7800} delay={200} />
-        <Orb color="#4BFFE8" size={100} startX={SCREEN_W * 0.2} startY={SCREEN_H * 0.2} duration={6800} delay={1200} />
+        <Orb color="#C84BFF" size={320} startX={-80}          startY={-60}           duration={7000} delay={0} />
+        <Orb color="#FF4BA6" size={260} startX={SCREEN_W-140} startY={60}            duration={8500} delay={300} />
+        <Orb color="#FF8A3D" size={180} startX={SCREEN_W-60}  startY={SCREEN_H-180}  duration={6200} delay={600} />
+        <Orb color="#4B8EFF" size={210} startX={-40}          startY={SCREEN_H-220}  duration={9000} delay={900} />
+        <Orb color="#FF4BD8" size={130} startX={SCREEN_W/2-60} startY={SCREEN_H*0.35} duration={5400} delay={400} />
+        <Orb color="#7B4BFF" size={160} startX={SCREEN_W*0.65} startY={SCREEN_H*0.55} duration={7800} delay={200} />
+        <Orb color="#4BFFE8" size={100} startX={SCREEN_W*0.2} startY={SCREEN_H*0.2}  duration={6800} delay={1200} />
       </View>
 
-      {/* ── Background noise / deep blur overlay ───────────────── */}
       <View style={styles.backdropOverlay} pointerEvents="none" />
 
-      {/* ── Scrollable content ──────────────────────────────────── */}
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* ── Brand header above card ─────────────────────────── */}
+          {/* Brand Header */}
           <Animated.View
             style={[
               styles.brandRow,
-              { opacity: cardAnim, transform: [{ translateY: cardAnim.interpolate({ inputRange: [0, 1], outputRange: [-30, 0] }) }] },
+              { opacity: cardAnim, transform: [{ translateY: cardAnim.interpolate({ inputRange: [0,1], outputRange: [-30,0] }) }] },
             ]}
           >
             <View style={styles.brandIconRing}>
@@ -362,60 +257,30 @@ export default function LoginScreen() {
             </View>
           </Animated.View>
 
-          {/* ── Glass Card ─────────────────────────────────────── */}
+          {/* Glass Card */}
           <Animated.View
             style={[
               styles.glassCard,
-              {
-                opacity: cardAnim,
-                transform: [
-                  { scale: cardScale },
-                  { translateY: cardAnim.interpolate({ inputRange: [0, 1], outputRange: [40, 0] }) },
-                ],
-              },
+              { opacity: cardAnim, transform: [{ scale: cardScale }, { translateY: cardTranslateY }] },
             ]}
           >
-            {/* Inner glass shimmer border */}
             <View style={styles.glassCardInner}>
 
-              {/* Tab switcher */}
-              <View style={styles.tabRow}>
-                {(['student', 'staff'] as const).map((tab) => (
-                  <Pressable
-                    key={tab}
-                    style={[styles.tabPill, activeTab === tab && styles.tabPillActive]}
-                    onPress={() => { setActiveTab(tab); setErrorMsg(''); }}
-                  >
-                    <Ionicons
-                      name={tab === 'student' ? 'person' : 'shield-checkmark'}
-                      size={13}
-                      color={activeTab === tab ? '#FFFFFF' : 'rgba(255,255,255,0.4)'}
-                    />
-                    <Text style={[styles.tabPillText, activeTab === tab && styles.tabPillTextActive]}>
-                      {tab === 'student' ? 'Student' : 'Staff & Admin'}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-
               {/* Title */}
-              <Text style={styles.cardTitle}>
-                {activeTab === 'student' ? 'Welcome Back' : 'Admin Access'}
-              </Text>
+              <Text style={styles.cardTitle}>Welcome Back</Text>
               <Text style={styles.cardSubtitle}>
-                {activeTab === 'student'
-                  ? 'Sign in to access your campus dashboard'
-                  : 'Authorized credentials only — issued by your institution'}
+                Sign in with your email, student ID, or institutional credentials.{'\n'}
+                The system will identify your role automatically.
               </Text>
 
-              {/* Error message */}
+              {/* Error */}
               {!!errorMsg && (
                 <View style={styles.errorBanner}>
                   <Text style={styles.errorBannerText}>{errorMsg}</Text>
                 </View>
               )}
 
-              {/* Google button */}
+              {/* Google */}
               <Pressable
                 style={({ pressed }) => [styles.googleBtn, pressed && { opacity: 0.8 }]}
                 onPress={handleGoogle}
@@ -428,9 +293,7 @@ export default function LoginScreen() {
                     <View style={styles.googleIconBox}>
                       <Ionicons name="logo-google" size={16} color="#EA4335" />
                     </View>
-                    <Text style={styles.googleBtnText}>
-                      {activeTab === 'student' ? 'Continue with Google' : 'Sign in with Google Workspace'}
-                    </Text>
+                    <Text style={styles.googleBtnText}>Continue with Google</Text>
                   </>
                 )}
               </Pressable>
@@ -442,27 +305,25 @@ export default function LoginScreen() {
                 <View style={styles.dividerLine} />
               </View>
 
-              {/* Email input */}
+              {/* Identifier input */}
               <GlassInput
-                icon={activeTab === 'student' ? 'mail-outline' : 'person-outline'}
-                placeholder={activeTab === 'student' ? 'Email or Registration ID' : 'Username, ID, or Email'}
-                value={email}
-                onChangeText={setEmail}
-                keyboardType={activeTab === 'student' ? 'email-address' : 'default'}
+                icon="person-outline"
+                placeholder="Email, student ID, or username"
+                value={identifier}
+                onChangeText={setIdentifier}
+                keyboardType="email-address"
               />
 
-              {/* Password input */}
-              <View style={styles.passwordRow}>
-                <GlassInput
-                  icon="lock-closed-outline"
-                  placeholder="Password"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry
-                />
-              </View>
+              {/* Password */}
+              <GlassInput
+                icon="lock-closed-outline"
+                placeholder="Password"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+              />
 
-              {/* Sign in button */}
+              {/* Sign In button */}
               <Pressable
                 style={({ pressed }) => [styles.signInBtn, (submitting || pressed) && { opacity: 0.85 }]}
                 onPress={handleLogin}
@@ -472,36 +333,23 @@ export default function LoginScreen() {
                   <ActivityIndicator color="#fff" />
                 ) : (
                   <>
-                    <Text style={styles.signInBtnText}>
-                      {activeTab === 'student' ? 'Enter Campus' : 'Authenticate'}
-                    </Text>
+                    <Text style={styles.signInBtnText}>Sign In</Text>
                     <Ionicons name="arrow-forward" size={16} color="#fff" style={{ marginLeft: 8 }} />
                   </>
                 )}
               </Pressable>
 
-              {/* Info for students — no self-signup */}
-              {activeTab === 'student' && (
-                <View style={styles.infoBox}>
-                  <Ionicons name="information-circle" size={16} color="#C4AAFF" />
-                  <Text style={styles.infoText}>
-                    New students are registered by your College Admin or Faculty. Contact your institution to get access.
-                  </Text>
-                </View>
-              )}
+              {/* Smart role hint */}
+              <View style={styles.infoBox}>
+                <Ionicons name="sparkles" size={15} color="#C4AAFF" />
+                <Text style={styles.infoText}>
+                  Your role is detected automatically — students, faculty, college admins, and super admin all use this same login.
+                </Text>
+              </View>
 
-              {activeTab === 'staff' && (
-                <View style={[styles.infoBox, { borderColor: 'rgba(100,220,200,0.25)' }]}>
-                  <Ionicons name="shield-half" size={16} color="#64DCC8" />
-                  <Text style={[styles.infoText, { color: '#64DCC8' }]}>
-                    Staff credentials are provisioned exclusively by the Super Admin.
-                  </Text>
-                </View>
-              )}
             </View>
           </Animated.View>
 
-          {/* Bottom version watermark */}
           <Animated.Text style={[styles.versionText, { opacity: cardAnim }]}>
             Campus Connect v1.0 · Secured by Firebase
           </Animated.Text>
@@ -518,11 +366,8 @@ const styles = StyleSheet.create({
   },
   orb: {
     position: 'absolute',
-    // blur effect via boxShadow on web, shadow on native
     ...Platform.select({
-      web: {
-        filter: 'blur(72px)',
-      },
+      web: { filter: 'blur(72px)' } as any,
       default: {
         shadowColor: '#C84BFF',
         shadowOffset: { width: 0, height: 0 },
@@ -542,6 +387,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 60,
   },
+  // Brand
   brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -558,15 +404,6 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(196,170,255,0.35)',
     alignItems: 'center',
     justifyContent: 'center',
-    ...Platform.select({
-      web: { boxShadow: '0 0 20px rgba(196,170,255,0.3)' },
-      default: {
-        shadowColor: '#C4AAFF',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.4,
-        shadowRadius: 12,
-      },
-    }),
   },
   brandName: {
     fontSize: 18,
@@ -581,7 +418,7 @@ const styles = StyleSheet.create({
     marginTop: 1,
     letterSpacing: 0.5,
   },
-  // ── Glass Card
+  // Glass Card
   glassCard: {
     width: '100%',
     maxWidth: 440,
@@ -592,7 +429,7 @@ const styles = StyleSheet.create({
         backdropFilter: 'blur(40px)',
         WebkitBackdropFilter: 'blur(40px)',
         boxShadow: '0 24px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.12)',
-      },
+      } as any,
       default: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 16 },
@@ -609,64 +446,20 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.14)',
     padding: 28,
   },
-  // ── Tabs
-  tabRow: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    padding: 4,
-    marginBottom: 24,
-    gap: 4,
-  },
-  tabPill: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 9,
-    borderRadius: 11,
-  },
-  tabPillActive: {
-    backgroundColor: 'rgba(196,170,255,0.22)',
-    borderWidth: 1,
-    borderColor: 'rgba(196,170,255,0.45)',
-    ...Platform.select({
-      web: { boxShadow: '0 0 16px rgba(196,170,255,0.25)' },
-      default: {
-        shadowColor: '#C4AAFF',
-        shadowOpacity: 0.3,
-        shadowRadius: 10,
-        shadowOffset: { width: 0, height: 0 },
-      },
-    }),
-  },
-  tabPillText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.4)',
-  },
-  tabPillTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  // ── Card text
   cardTitle: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: '800',
     color: '#FFFFFF',
-    marginBottom: 6,
+    marginBottom: 8,
     letterSpacing: -0.3,
   },
   cardSubtitle: {
     fontSize: 13,
-    color: 'rgba(255,255,255,0.45)',
-    marginBottom: 22,
-    lineHeight: 18,
+    color: 'rgba(255,255,255,0.42)',
+    marginBottom: 24,
+    lineHeight: 19,
   },
-  // ── Error
+  // Error
   errorBanner: {
     backgroundColor: 'rgba(255,80,80,0.12)',
     borderWidth: 1,
@@ -675,7 +468,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     marginBottom: 16,
-    ...Platform.select({ web: { backdropFilter: 'blur(8px)' }, default: {} }),
   },
   errorBannerText: {
     color: '#FF8080',
@@ -683,7 +475,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     fontWeight: '500',
   },
-  // ── Google button
+  // Google
   googleBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -696,13 +488,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 20,
     marginBottom: 20,
-    ...Platform.select({
-      web: {
-        backdropFilter: 'blur(10px)',
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12)',
-      },
-      default: {},
-    }),
   },
   googleIconBox: {
     width: 26,
@@ -718,7 +503,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.2,
   },
-  // ── Divider
+  // Divider
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -737,7 +522,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
-  // ── Glass Input
+  // Glass Input
   glassInputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -747,13 +532,6 @@ const styles = StyleSheet.create({
     paddingVertical: Platform.OS === 'ios' ? 14 : 0,
     minHeight: 52,
     marginBottom: 14,
-    ...Platform.select({
-      web: { backdropFilter: 'blur(10px)' },
-      default: {},
-    }),
-  },
-  inputIcon: {
-    marginRight: 10,
   },
   glassInput: {
     flex: 1,
@@ -762,10 +540,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     paddingVertical: Platform.OS === 'android' ? 12 : 0,
   },
-  passwordRow: {
-    marginBottom: 4,
-  },
-  // ── Sign in button
+  // Sign In Button
   signInBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -774,14 +549,11 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     marginTop: 6,
     marginBottom: 18,
-    backgroundColor: 'transparent',
-    borderWidth: 0,
-    overflow: 'hidden',
     ...Platform.select({
       web: {
         background: 'linear-gradient(135deg, #9B5CFF 0%, #FF4BA6 100%)',
         boxShadow: '0 8px 32px rgba(155,92,255,0.45)',
-      },
+      } as any,
       default: {
         backgroundColor: '#9B5CFF',
         shadowColor: '#9B5CFF',
@@ -798,25 +570,25 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 0.4,
   },
-  // ── Info box
+  // Info box
   infoBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 10,
     backgroundColor: 'rgba(196,170,255,0.06)',
     borderWidth: 1,
-    borderColor: 'rgba(196,170,255,0.2)',
+    borderColor: 'rgba(196,170,255,0.18)',
     borderRadius: 12,
     padding: 12,
   },
   infoText: {
     flex: 1,
     fontSize: 12,
-    color: 'rgba(196,170,255,0.75)',
+    color: 'rgba(196,170,255,0.7)',
     lineHeight: 17,
     fontWeight: '500',
   },
-  // ── Version watermark
+  // Version
   versionText: {
     marginTop: 24,
     fontSize: 11,
