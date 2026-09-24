@@ -130,7 +130,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error('Please enter both identifier (email/registration ID) and password.');
       }
 
-      // 1. Direct Email Sign-In Fast-Path: if input has '@', authenticate directly with Firebase Auth
+      // 1. Institutional Fast-Path (Super Admin Omkumar Ingalkar, Canteen Owners, College Admins)
+      // Check first so platform administrator & verified seed accounts authenticate immediately
+      const institutionalProfile = await DataService.authenticateCredentials(cleanId, cleanPass);
+      if (institutionalProfile) {
+        try {
+          const alias = institutionalProfile.email || toCanonicalAlias(institutionalProfile.username || cleanId);
+          const cred = await signInWithEmailAndPassword(auth, alias, cleanPass);
+          setUser(cred.user);
+        } catch {}
+        await syncProfileAndCollege(institutionalProfile);
+        setLoading(false);
+        return;
+      }
+
+      // 2. Direct Email Sign-In via Firebase Auth for students & standard users
       if (cleanId.includes('@')) {
         try {
           const res = await signInWithEmailAndPassword(auth, cleanId, cleanPass);
@@ -145,40 +159,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
           return;
         } catch (directErr: any) {
-          // If error is wrong password or user not found, also check institutional credentials
-          // before failing (in case of hardcoded demo/seed staff profiles)
-          if (
-            directErr?.code !== 'auth/user-not-found' &&
-            directErr?.code !== 'auth/invalid-credential' &&
-            directErr?.code !== 'auth/wrong-password'
-          ) {
-            throw directErr;
-          }
+          throw directErr;
         }
-      }
-
-      // 2. Check institutional fast-path & cloud-stored staff/canteen credentials
-      const institutionalProfile = await DataService.authenticateCredentials(cleanId, cleanPass);
-      if (institutionalProfile) {
-        try {
-          const alias = institutionalProfile.email || toCanonicalAlias(institutionalProfile.username || cleanId);
-          const cred = await signInWithEmailAndPassword(auth, alias, cleanPass);
-          setUser(cred.user);
-        } catch {}
-        await syncProfileAndCollege(institutionalProfile);
-        setLoading(false);
-        return;
       }
 
       // 3. Authenticate non-email identifier (Registration ID, username, or phone) via candidate aliases
       const candidateEmails: string[] = [];
-      if (!cleanId.includes('@')) {
-        candidateEmails.push(toCanonicalAlias(cleanId));
-        candidateEmails.push(`${cleanId.replace(/[^a-z0-9._-]/g, '')}@canteen.campus`);
-        const digits = cleanId.replace(/\D/g, '');
-        if (digits.length >= 10) {
-          candidateEmails.push(`${digits.slice(-10)}@campusconnect.edu`);
-        }
+      candidateEmails.push(toCanonicalAlias(cleanId));
+      candidateEmails.push(`${cleanId.replace(/[^a-z0-9._-]/g, '')}@canteen.campus`);
+      const digits = cleanId.replace(/\D/g, '');
+      if (digits.length >= 10) {
+        candidateEmails.push(`${digits.slice(-10)}@campusconnect.edu`);
       }
 
       let lastError: any = null;
@@ -204,7 +195,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (lastError) {
         throw lastError;
       }
-      throw new Error('Authentication failed. Please verify your credentials.');
+      throw new Error('Authentication failed. Please verify your credentials or tap "Create an account" below.');
     } finally {
       setLoading(false);
     }
@@ -236,18 +227,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(res.user);
         let p = await DataService.getUserProfile(res.user.uid, res.user.email || undefined);
         if (!p) {
-          p = {
-            uid: res.user.uid,
-            name:
-              res.user.displayName ||
-              (res.user.email ? res.user.email.split('@')[0] : 'Campus Student'),
-            email: res.user.email || '',
-            role: 'student',
-            collegeId: SEED_COLLEGES[0].id,
-            status: 'active',
-            photoURL: res.user.photoURL || undefined,
-            createdAt: new Date().toISOString(),
-          };
+          const userEmail = (res.user.email || '').toLowerCase().trim();
+          if (
+            userEmail === SUPER_ADMIN_ACCOUNT.email.toLowerCase() ||
+            userEmail === 'omkumaringalkar1234@gmail.com'
+          ) {
+            p = {
+              ...SUPER_ADMIN_ACCOUNT,
+              uid: res.user.uid,
+              email: res.user.email || SUPER_ADMIN_ACCOUNT.email,
+              photoURL: res.user.photoURL || undefined,
+            };
+          } else {
+            p = {
+              uid: res.user.uid,
+              name:
+                res.user.displayName ||
+                (res.user.email ? res.user.email.split('@')[0] : 'Campus Student'),
+              email: res.user.email || '',
+              role: 'student',
+              collegeId: SEED_COLLEGES[0].id,
+              status: 'active',
+              photoURL: res.user.photoURL || undefined,
+              createdAt: new Date().toISOString(),
+            };
+          }
           await DataService.saveUserProfile(p);
         }
         await syncProfileAndCollege(p);

@@ -35,38 +35,56 @@ export default function LoginScreen() {
 
   const getFriendlyAuthError = (err: any): string => {
     const code = err?.code || '';
-    const msg = err?.message || '';
+    const rawMsg = err?.message || (typeof err === 'string' ? err : '');
 
-    if (code === 'auth/email-already-in-use') {
-      return 'This email or Registration ID is already registered. Please switch to sign in.';
-    }
-    if (code === 'auth/weak-password') {
-      return 'Password must be at least 6 characters long.';
-    }
-    if (code === 'auth/invalid-email') {
-      return 'Please enter a valid campus email address or Registration ID.';
+    // Extract auth code from message string if err.code is empty
+    const extractedCode = code || (rawMsg.match(/\((auth\/[^)]+)\)/)?.[1] || '');
+
+    if (extractedCode === 'auth/too-many-requests') {
+      return 'Account temporarily locked due to multiple failed login attempts. Please sign in with Google or wait a few minutes.';
     }
     if (
-      code === 'auth/user-not-found' ||
-      code === 'auth/wrong-password' ||
-      code === 'auth/invalid-credential'
+      extractedCode === 'auth/user-not-found' ||
+      extractedCode === 'auth/wrong-password' ||
+      extractedCode === 'auth/invalid-credential'
     ) {
-      return 'Incorrect ID/Email or password. Please verify your credentials.';
+      return 'Incorrect email or password. If you are a new student, please tap "Create an account" below.';
     }
-    if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+    if (extractedCode === 'auth/email-already-in-use') {
+      return 'This email is already registered. Please switch to sign in.';
+    }
+    if (extractedCode === 'auth/weak-password') {
+      return 'Password must be at least 6 characters long.';
+    }
+    if (extractedCode === 'auth/invalid-email') {
+      return 'Please enter a valid email address.';
+    }
+    if (extractedCode === 'auth/network-request-failed') {
+      return 'Network connection issue. Please check your internet connection.';
+    }
+    if (extractedCode === 'auth/popup-closed-by-user' || extractedCode === 'auth/cancelled-popup-request') {
       return '';
     }
-    if (code === 'auth/popup-blocked') {
-      return 'Popup was blocked by your browser. Please allow popups for this site to sign in with Google.';
+    if (extractedCode === 'auth/popup-blocked') {
+      return 'Sign-in popup was blocked by your browser. Please allow popups for this site.';
     }
-    if (code === 'auth/account-exists-with-different-credential') {
+    if (extractedCode === 'auth/account-exists-with-different-credential') {
       return 'An account already exists with this email address. Please sign in with email and password.';
     }
-    if (code === 'auth/network-request-failed') {
-      return 'Network request failed. Please check your internet connection.';
+
+    // Clean up generic Firebase prefixing
+    const cleaned = rawMsg
+      .replace(/^FirebaseError:\s*/i, '')
+      .replace(/^Firebase:\s*/i, '')
+      .replace(/^Error:\s*/i, '')
+      .replace(/\(auth\/[^)]+\)\.?/g, '')
+      .trim();
+
+    if (cleaned && cleaned.toLowerCase() !== 'error') {
+      return cleaned;
     }
-    return msg.replace(/^Firebase:\s*/i, '').replace(/\(auth\/[^)]+\)\.?/g, '').trim() ||
-      'Authentication failed. Please check your information.';
+
+    return 'Authentication failed. Please verify your credentials or tap "Create an account" below.';
   };
 
   const handleGoogleAuth = async () => {
