@@ -16,15 +16,15 @@ export default function StudentTabLayout() {
         tabBarStyle: [
           styles.tabBar,
           {
-            backgroundColor: colors.tabBarBg,
-            borderTopColor: colors.tabBarBorder,
+            backgroundColor: '#0D0018',
+            borderTopColor: 'rgba(196,170,255,0.15)',
           },
         ],
         tabBarShowLabel: true,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textMuted,
+        tabBarActiveTintColor: '#C4AAFF',
+        tabBarInactiveTintColor: 'rgba(255,255,255,0.3)',
         tabBarLabelStyle: styles.tabLabel,
-        sceneStyle: { backgroundColor: colors.background },
+        sceneStyle: { backgroundColor: '#0A0010' },
       }}
     >
       <Tabs.Screen
@@ -35,13 +35,13 @@ export default function StudentTabLayout() {
             <View
               style={[
                 styles.iconWrapper,
-                focused && { backgroundColor: colors.primary },
+                focused && { backgroundColor: 'rgba(196,170,255,0.2)' },
               ]}
             >
               <Ionicons
                 name={focused ? 'home' : 'home-outline'}
                 size={20}
-                color={focused ? (isDark ? '#0B110E' : '#FFFFFF') : colors.textMuted}
+                color={focused ? '#C4AAFF' : 'rgba(255,255,255,0.3)'}
               />
             </View>
           ),
@@ -56,13 +56,13 @@ export default function StudentTabLayout() {
             <View
               style={[
                 styles.iconWrapper,
-                focused && { backgroundColor: colors.primary },
+                focused && { backgroundColor: 'rgba(196,170,255,0.2)' },
               ]}
             >
               <Ionicons
                 name={focused ? 'compass' : 'compass-outline'}
                 size={22}
-                color={focused ? (isDark ? '#0B110E' : '#FFFFFF') : colors.textMuted}
+                color={focused ? '#C4AAFF' : 'rgba(255,255,255,0.3)'}
               />
             </View>
           ),
@@ -77,13 +77,13 @@ export default function StudentTabLayout() {
             <View
               style={[
                 styles.iconWrapper,
-                focused && { backgroundColor: colors.primary },
+                focused && { backgroundColor: 'rgba(196,170,255,0.2)' },
               ]}
             >
               <Ionicons
                 name={focused ? 'restaurant' : 'restaurant-outline'}
                 size={20}
-                color={focused ? (isDark ? '#0B110E' : '#FFFFFF') : colors.textMuted}
+                color={focused ? '#C4AAFF' : 'rgba(255,255,255,0.3)'}
               />
             </View>
           ),
@@ -98,13 +98,13 @@ export default function StudentTabLayout() {
             <View
               style={[
                 styles.iconWrapper,
-                focused && { backgroundColor: colors.primary },
+                focused && { backgroundColor: 'rgba(196,170,255,0.2)' },
               ]}
             >
               <Ionicons
                 name={focused ? 'calendar' : 'calendar-outline'}
                 size={20}
-                color={focused ? (isDark ? '#0B110E' : '#FFFFFF') : colors.textMuted}
+                color={focused ? '#C4AAFF' : 'rgba(255,255,255,0.3)'}
               />
             </View>
           ),
@@ -119,13 +119,13 @@ export default function StudentTabLayout() {
             <View
               style={[
                 styles.iconWrapper,
-                focused && { backgroundColor: colors.primary },
+                focused && { backgroundColor: 'rgba(196,170,255,0.2)' },
               ]}
             >
               <Ionicons
                 name={focused ? 'person-circle' : 'person-circle-outline'}
                 size={22}
-                color={focused ? (isDark ? '#0B110E' : '#FFFFFF') : colors.textMuted}
+                color={focused ? '#C4AAFF' : 'rgba(255,255,255,0.3)'}
               />
             </View>
           ),
@@ -137,9 +137,9 @@ export default function StudentTabLayout() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: '#0E1713',
+    backgroundColor: '#0D0018',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(142, 228, 175, 0.12)',
+    borderTopColor: 'rgba(196,170,255,0.15)',
     height: Platform.OS === 'ios' ? 88 : 72,
     paddingTop: 8,
     paddingBottom: Platform.OS === 'ios' ? 28 : 10,

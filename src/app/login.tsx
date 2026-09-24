@@ -1,8 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
-  Alert,
+  Animated,
+  Easing,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -10,676 +13,815 @@ import {
   TextInput,
   View,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
 
-import { CampusTheme } from '@/constants/theme';
 import { useAuth } from '@/context/auth-context';
-import { useAppTheme } from '@/context/theme-context';
-import { SEED_COLLEGES } from '@/services/seed-data';
 
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+
+// ─── Animated Orb ──────────────────────────────────────────────────────────
+function Orb({
+  color,
+  size,
+  startX,
+  startY,
+  duration,
+  delay = 0,
+}: {
+  color: string;
+  size: number;
+  startX: number;
+  startY: number;
+  duration: number;
+  delay?: number;
+}) {
+  const posX = useRef(new Animated.Value(startX)).current;
+  const posY = useRef(new Animated.Value(startY)).current;
+  const scale = useRef(new Animated.Value(1)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const rand = (min: number, max: number) => Math.random() * (max - min) + min;
+
+    Animated.timing(opacity, {
+      toValue: 0.55,
+      duration: 1200,
+      delay,
+      useNativeDriver: true,
+    }).start();
+
+    const animate = () => {
+      Animated.parallel([
+        Animated.sequence([
+          Animated.timing(posX, {
+            toValue: startX + rand(-120, 120),
+            duration,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(posX, {
+            toValue: startX + rand(-120, 120),
+            duration,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(posX, {
+            toValue: startX,
+            duration,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.sequence([
+          Animated.timing(posY, {
+            toValue: startY + rand(-140, 140),
+            duration: duration * 1.15,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(posY, {
+            toValue: startY + rand(-140, 140),
+            duration: duration * 1.15,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(posY, {
+            toValue: startY,
+            duration: duration * 1.15,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.sequence([
+          Animated.timing(scale, {
+            toValue: rand(0.85, 1.3),
+            duration: duration * 0.9,
+            easing: Easing.inOut(Easing.quad),
+            useNativeDriver: true,
+          }),
+          Animated.timing(scale, {
+            toValue: rand(0.75, 1.15),
+            duration: duration * 0.9,
+            easing: Easing.inOut(Easing.quad),
+            useNativeDriver: true,
+          }),
+          Animated.timing(scale, {
+            toValue: 1,
+            duration: duration * 0.9,
+            easing: Easing.inOut(Easing.quad),
+            useNativeDriver: true,
+          }),
+        ]),
+      ]).start(animate);
+    };
+
+    const t = setTimeout(animate, delay);
+    return () => clearTimeout(t);
+  }, []);
+
+  return (
+    <Animated.View
+      style={[
+        styles.orb,
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: color,
+          opacity,
+          transform: [{ translateX: posX }, { translateY: posY }, { scale }],
+        },
+      ]}
+    />
+  );
+}
+
+// ─── Glass Input ────────────────────────────────────────────────────────────
+function GlassInput({
+  icon,
+  placeholder,
+  value,
+  onChangeText,
+  secureTextEntry,
+  keyboardType,
+  autoCapitalize,
+}: {
+  icon: any;
+  placeholder: string;
+  value: string;
+  onChangeText: (v: string) => void;
+  secureTextEntry?: boolean;
+  keyboardType?: any;
+  autoCapitalize?: any;
+}) {
+  const [focused, setFocused] = useState(false);
+  const focusAnim = useRef(new Animated.Value(0)).current;
+
+  const handleFocus = () => {
+    setFocused(true);
+    Animated.timing(focusAnim, {
+      toValue: 1,
+      duration: 220,
+      useNativeDriver: false,
+    }).start();
+  };
+
+  const handleBlur = () => {
+    setFocused(false);
+    Animated.timing(focusAnim, {
+      toValue: 0,
+      duration: 220,
+      useNativeDriver: false,
+    }).start();
+  };
+
+  const borderColor = focusAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['rgba(255,255,255,0.15)', 'rgba(168,130,255,0.75)'],
+  });
+
+  const bgColor = focusAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['rgba(255,255,255,0.06)', 'rgba(168,130,255,0.1)'],
+  });
+
+  return (
+    <Animated.View
+      style={[
+        styles.glassInputWrap,
+        { borderColor, backgroundColor: bgColor },
+      ]}
+    >
+      <Ionicons
+        name={icon}
+        size={18}
+        color={focused ? '#C4AAFF' : 'rgba(255,255,255,0.4)'}
+        style={styles.inputIcon}
+      />
+      <TextInput
+        style={styles.glassInput}
+        placeholder={placeholder}
+        placeholderTextColor="rgba(255,255,255,0.28)"
+        value={value}
+        onChangeText={onChangeText}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        secureTextEntry={secureTextEntry}
+        keyboardType={keyboardType || 'default'}
+        autoCapitalize={autoCapitalize || 'none'}
+        autoCorrect={false}
+      />
+    </Animated.View>
+  );
+}
+
+// ─── Main Login Screen ───────────────────────────────────────────────────────
 export default function LoginScreen() {
   const router = useRouter();
-  const { login, loginWithGoogle, signup, loading: authLoading } = useAuth();
-  const { colors, isDark } = useAppTheme();
+  const { login, loginWithGoogle } = useAuth();
 
   const [activeTab, setActiveTab] = useState<'student' | 'staff'>('student');
-  const [isSignup, setIsSignup] = useState(false);
   const [email, setEmail] = useState('');
-  const [registrationId, setRegistrationId] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [selectedCollegeId, setSelectedCollegeId] = useState(SEED_COLLEGES[0].id);
   const [submitting, setSubmitting] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [showPasswordHint, setShowPasswordHint] = useState(false);
 
-  const getFriendlyAuthError = (err: any): string => {
+  // Card entrance animation
+  const cardAnim = useRef(new Animated.Value(0)).current;
+  const cardScale = useRef(new Animated.Value(0.88)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(cardAnim, {
+        toValue: 1,
+        duration: 700,
+        delay: 300,
+        easing: Easing.out(Easing.back(1.1)),
+        useNativeDriver: true,
+      }),
+      Animated.spring(cardScale, {
+        toValue: 1,
+        delay: 300,
+        tension: 65,
+        friction: 9,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  const getFriendlyError = (err: any): string => {
     const code = err?.code || '';
     const rawMsg = err?.message || (typeof err === 'string' ? err : '');
+    const extracted = code || (rawMsg.match(/\((auth\/[^)]+)\)/)?.[1] || '');
 
-    // Extract auth code from message string if err.code is empty
-    const extractedCode = code || (rawMsg.match(/\((auth\/[^)]+)\)/)?.[1] || '');
-
-    if (extractedCode === 'auth/too-many-requests') {
-      return 'Account temporarily locked due to multiple failed login attempts. Please sign in with Google or wait a few minutes.';
+    if (extracted === 'auth/too-many-requests') {
+      return '🔒 Account temporarily locked. Please try with Google or wait a few minutes.';
     }
-    if (
-      extractedCode === 'auth/user-not-found' ||
-      extractedCode === 'auth/wrong-password' ||
-      extractedCode === 'auth/invalid-credential'
-    ) {
-      return 'Incorrect email or password. If you are a new student, please tap "Create an account" below.';
+    if (['auth/user-not-found', 'auth/wrong-password', 'auth/invalid-credential'].includes(extracted)) {
+      return '❌ Incorrect email or password. Please check your credentials.';
     }
-    if (extractedCode === 'auth/email-already-in-use') {
-      return 'This email is already registered. Please switch to sign in.';
-    }
-    if (extractedCode === 'auth/weak-password') {
-      return 'Password must be at least 6 characters long.';
-    }
-    if (extractedCode === 'auth/invalid-email') {
-      return 'Please enter a valid email address.';
-    }
-    if (extractedCode === 'auth/network-request-failed') {
-      return 'Network connection issue. Please check your internet connection.';
-    }
-    if (extractedCode === 'auth/popup-closed-by-user' || extractedCode === 'auth/cancelled-popup-request') {
-      return '';
-    }
-    if (extractedCode === 'auth/popup-blocked') {
-      return 'Sign-in popup was blocked by your browser. Please allow popups for this site.';
-    }
-    if (extractedCode === 'auth/account-exists-with-different-credential') {
-      return 'An account already exists with this email address. Please sign in with email and password.';
+    if (extracted === 'auth/invalid-email') return '⚠️ Please enter a valid email address.';
+    if (extracted === 'auth/network-request-failed') return '📡 Network error. Check your connection.';
+    if (['auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(extracted)) return '';
+    if (extracted === 'auth/popup-blocked') return '🚫 Popup blocked. Allow popups and try again.';
+    if (extracted === 'auth/account-exists-with-different-credential') {
+      return '⚠️ Account exists with a different sign-in method. Use email/password.';
     }
 
-    // Clean up generic Firebase prefixing
     const cleaned = rawMsg
-      .replace(/^FirebaseError:\s*/i, '')
-      .replace(/^Firebase:\s*/i, '')
-      .replace(/^Error:\s*/i, '')
+      .replace(/^(FirebaseError|Firebase|Error):\s*/gi, '')
       .replace(/\(auth\/[^)]+\)\.?/g, '')
       .trim();
 
-    if (cleaned && cleaned.toLowerCase() !== 'error') {
-      return cleaned;
-    }
-
-    return 'Authentication failed. Please verify your credentials or tap "Create an account" below.';
+    if (cleaned && cleaned.toLowerCase() !== 'error') return cleaned;
+    return '❌ Authentication failed. Please verify your credentials.';
   };
 
-  const handleGoogleAuth = async () => {
+  const handleLogin = async () => {
+    setErrorMsg('');
+    const cleanEmail = email.trim();
+    const cleanPass = password.trim();
+
+    if (!cleanEmail || !cleanPass) {
+      setErrorMsg('Please enter your email / ID and password.');
+      return;
+    }
+    if (cleanPass.length < 6) {
+      setErrorMsg('Password must be at least 6 characters.');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      await login(cleanEmail, cleanPass);
+      router.replace('/' as any);
+    } catch (err: any) {
+      const msg = getFriendlyError(err);
+      if (msg) setErrorMsg(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleGoogle = async () => {
     setErrorMsg('');
     try {
       setGoogleLoading(true);
       await loginWithGoogle();
       router.replace('/' as any);
     } catch (err: any) {
-      const msg = getFriendlyAuthError(err);
+      const msg = getFriendlyError(err);
       if (msg) setErrorMsg(msg);
     } finally {
       setGoogleLoading(false);
     }
   };
 
-  const handleAuth = async () => {
-    setErrorMsg('');
-    const cleanEmail = email.trim();
-    const cleanPassword = password.trim();
-    const cleanRegId = registrationId.trim().toUpperCase();
-
-    if (!cleanEmail || !cleanPassword) {
-      setErrorMsg(
-        isSignup
-          ? 'Please fill in all required fields.'
-          : 'Please enter your ID/Email and password.'
-      );
-      return;
-    }
-
-    if (cleanPassword.length < 6) {
-      setErrorMsg('Password must be at least 6 characters long.');
-      return;
-    }
-
-    try {
-      setSubmitting(true);
-      if (isSignup && activeTab === 'student') {
-        if (!name.trim()) {
-          setErrorMsg('Please enter your full name.');
-          setSubmitting(false);
-          return;
-        }
-        await signup(cleanEmail, cleanPassword, name.trim(), 'student', selectedCollegeId, {
-          registrationId: cleanRegId || undefined,
-          studentId: cleanRegId || undefined,
-          rollNumber: cleanRegId || undefined,
-          department: 'Information Technology',
-          year: '3rd Year',
-          division: 'Div A',
-        });
-        router.replace('/(student)' as any);
-      } else {
-        await login(cleanEmail, cleanPassword);
-        router.replace('/' as any);
-      }
-    } catch (err: any) {
-      setErrorMsg(getFriendlyAuthError(err));
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   return (
-    <ScrollView
-      contentContainerStyle={styles.scrollContainer}
-      keyboardShouldPersistTaps="handled"
-      style={[styles.container, { backgroundColor: colors.background }]}
-    >
-      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-        {/* Brand Header */}
-        <View style={styles.logoRow}>
-          <View style={styles.iconBox}>
-            <Ionicons name="school" size={28} color={CampusTheme.colors.primary} />
-          </View>
-          <View>
-            <Text style={styles.brandTitle}>CAMPUS CONNECT</Text>
-            <Text style={styles.brandTagline}>Your Campus. Connected.</Text>
-          </View>
-        </View>
-
-        {/* Portal Type Switcher */}
-        <View style={styles.tabContainer}>
-          <Pressable
-            style={[styles.tabButton, activeTab === 'student' && styles.activeTabButton]}
-            onPress={() => {
-              setActiveTab('student');
-              setErrorMsg('');
-            }}
-          >
-            <Ionicons
-              name="person"
-              size={16}
-              color={
-                activeTab === 'student'
-                  ? CampusTheme.colors.pillActiveText
-                  : CampusTheme.colors.textMuted
-              }
-            />
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === 'student' && styles.activeTabText,
-              ]}
-            >
-              Student Portal
-            </Text>
-          </Pressable>
-
-          <Pressable
-            style={[styles.tabButton, activeTab === 'staff' && styles.activeTabButton]}
-            onPress={() => {
-              setActiveTab('staff');
-              setIsSignup(false);
-              setErrorMsg('');
-            }}
-          >
-            <Ionicons
-              name="shield-checkmark"
-              size={16}
-              color={
-                activeTab === 'staff'
-                  ? CampusTheme.colors.pillActiveText
-                  : CampusTheme.colors.textMuted
-              }
-            />
-            <Text
-              style={[
-                styles.tabText,
-                activeTab === 'staff' && styles.activeTabText,
-              ]}
-            >
-              Staff & Admin
-            </Text>
-          </Pressable>
-        </View>
-
-        <Text style={styles.formTitle}>
-          {activeTab === 'student'
-            ? isSignup
-              ? 'Student Registration'
-              : 'Student Sign In'
-            : 'Staff & Administrative Access'}
-        </Text>
-        <Text style={styles.formSubtitle}>
-          {activeTab === 'student'
-            ? 'Access timetable, 360° campus spaces, and canteen orders.'
-            : 'Authorized credentials issued by institutional administration.'}
-        </Text>
-
-        {errorMsg ? (
-          <View style={styles.errorBox}>
-            <Ionicons name="alert-circle" size={18} color={CampusTheme.colors.danger} />
-            <Text style={styles.errorText}>{errorMsg}</Text>
-          </View>
-        ) : null}
-
-        {/* Google OAuth Button */}
-        <Pressable
-          style={[
-            styles.googleButton,
-            {
-              backgroundColor: isDark ? '#1F1F1F' : '#FFFFFF',
-              borderColor: isDark ? '#444746' : '#DADCE0',
-            },
-            googleLoading && { opacity: 0.7 },
-          ]}
-          onPress={handleGoogleAuth}
-          disabled={submitting || googleLoading}
-        >
-          {googleLoading ? (
-            <ActivityIndicator size="small" color={CampusTheme.colors.primary} />
-          ) : (
-            <>
-              <Ionicons name="logo-google" size={18} color="#EA4335" />
-              <Text
-                style={[
-                  styles.googleButtonText,
-                  { color: isDark ? '#E3E3E3' : '#3C4043' },
-                ]}
-              >
-                {activeTab === 'student'
-                  ? isSignup
-                    ? 'Sign up with Google'
-                    : 'Continue with Google'
-                  : 'Sign in with Google Workspace'}
-              </Text>
-            </>
-          )}
-        </Pressable>
-
-        {/* Divider */}
-        <View style={styles.dividerRow}>
-          <View style={[styles.dividerLine, { backgroundColor: colors.cardBorder }]} />
-          <Text style={[styles.dividerText, { color: CampusTheme.colors.textMuted }]}>
-            {activeTab === 'student' ? 'or continue with direct email' : 'or enter institutional credentials'}
-          </Text>
-          <View style={[styles.dividerLine, { backgroundColor: colors.cardBorder }]} />
-        </View>
-
-        {/* Form Inputs */}
-        {isSignup && activeTab === 'student' && (
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Full Name</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. Aarav Kulkarni"
-              placeholderTextColor={CampusTheme.colors.textDim}
-              value={name}
-              onChangeText={setName}
-            />
-          </View>
-        )}
-
-        {isSignup && activeTab === 'student' && (
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Student Registration ID / PRN (Optional)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. 2024CS001 or PRN24101"
-              placeholderTextColor={CampusTheme.colors.textDim}
-              autoCapitalize="characters"
-              value={registrationId}
-              onChangeText={setRegistrationId}
-            />
-          </View>
-        )}
-
-        {isSignup && activeTab === 'student' && (
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Select College</Text>
-            <View style={styles.collegeSelector}>
-              {SEED_COLLEGES.map((c) => (
-                <Pressable
-                  key={c.id}
-                  style={[
-                    styles.collegePill,
-                    selectedCollegeId === c.id && styles.activeCollegePill,
-                  ]}
-                  onPress={() => setSelectedCollegeId(c.id)}
-                >
-                  <Text
-                    style={[
-                      styles.collegePillText,
-                      selectedCollegeId === c.id && styles.activeCollegePillText,
-                    ]}
-                  >
-                    {c.shortName}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-        )}
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>
-            {activeTab === 'student'
-              ? isSignup
-                ? 'Email Address'
-                : 'Direct Email or Registration ID'
-              : 'Institutional ID, Username, or Email'}
-          </Text>
-          <TextInput
-            style={styles.input}
-            placeholder={
-              activeTab === 'student'
-                ? isSignup
-                  ? 'e.g. name@gmail.com or student@jspm.edu'
-                  : 'e.g. student@gmail.com or 2024CS001'
-                : 'omkumar_01, admin_jspm, or email'
-            }
-            placeholderTextColor={CampusTheme.colors.textDim}
-            keyboardType={
-              activeTab === 'student' && isSignup ? 'email-address' : 'default'
-            }
-            autoCapitalize="none"
-            value={email}
-            onChangeText={setEmail}
-          />
-        </View>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Password</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="••••••••"
-            placeholderTextColor={CampusTheme.colors.textDim}
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-          />
-        </View>
-
-        {!isSignup && (
-          <Text style={styles.deviceHintText}>
-            Multi-device sync active: sign in with your ID & password on any device.
-          </Text>
-        )}
-
-        <Pressable
-          style={[styles.submitButton, submitting && { opacity: 0.7 }]}
-          onPress={handleAuth}
-          disabled={submitting}
-        >
-          {submitting ? (
-            <ActivityIndicator color={CampusTheme.colors.background} />
-          ) : (
-            <Text style={styles.submitButtonText}>
-              {activeTab === 'student'
-                ? isSignup
-                  ? 'Complete Registration'
-                  : 'Enter Campus'
-                : 'Authenticate Staff Portal'}
-            </Text>
-          )}
-        </Pressable>
-
-        {activeTab === 'student' && (
-          <Pressable
-            style={styles.switchAuthMode}
-            onPress={() => {
-              setIsSignup(!isSignup);
-              setErrorMsg('');
-            }}
-          >
-            <Text style={styles.switchAuthText}>
-              {isSignup
-                ? 'Already registered? Sign in here'
-                : "New student? Create an account"}
-            </Text>
-          </Pressable>
-        )}
-
-        {activeTab === 'staff' && (
-          <View style={styles.staffNoticeBox}>
-            <View style={styles.staffNoticeIcon}>
-              <Ionicons name="shield-checkmark" size={16} color={CampusTheme.colors.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.staffNoticeTitle}>Platform Institutional Security</Text>
-              <Text style={styles.staffNoticeText}>
-                Super Admin has exclusive authority over College Admin IDs. College Admin accounts are provisioned directly by the Super Admin.
-              </Text>
-            </View>
-          </View>
-        )}
+    <View style={styles.root}>
+      {/* ── 3D Animated Orb Background ─────────────────────────── */}
+      <View style={StyleSheet.absoluteFill} pointerEvents="none">
+        <Orb color="#C84BFF" size={320} startX={-80} startY={-60} duration={7000} delay={0} />
+        <Orb color="#FF4BA6" size={260} startX={SCREEN_W - 140} startY={60} duration={8500} delay={300} />
+        <Orb color="#FF8A3D" size={180} startX={SCREEN_W - 60} startY={SCREEN_H - 180} duration={6200} delay={600} />
+        <Orb color="#4B8EFF" size={210} startX={-40} startY={SCREEN_H - 220} duration={9000} delay={900} />
+        <Orb color="#FF4BD8" size={130} startX={SCREEN_W / 2 - 60} startY={SCREEN_H * 0.35} duration={5400} delay={400} />
+        <Orb color="#7B4BFF" size={160} startX={SCREEN_W * 0.65} startY={SCREEN_H * 0.55} duration={7800} delay={200} />
+        <Orb color="#4BFFE8" size={100} startX={SCREEN_W * 0.2} startY={SCREEN_H * 0.2} duration={6800} delay={1200} />
       </View>
-    </ScrollView>
+
+      {/* ── Background noise / deep blur overlay ───────────────── */}
+      <View style={styles.backdropOverlay} pointerEvents="none" />
+
+      {/* ── Scrollable content ──────────────────────────────────── */}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* ── Brand header above card ─────────────────────────── */}
+          <Animated.View
+            style={[
+              styles.brandRow,
+              { opacity: cardAnim, transform: [{ translateY: cardAnim.interpolate({ inputRange: [0, 1], outputRange: [-30, 0] }) }] },
+            ]}
+          >
+            <View style={styles.brandIconRing}>
+              <Ionicons name="school" size={26} color="#C4AAFF" />
+            </View>
+            <View>
+              <Text style={styles.brandName}>CAMPUS CONNECT</Text>
+              <Text style={styles.brandTagline}>Your Campus. Connected.</Text>
+            </View>
+          </Animated.View>
+
+          {/* ── Glass Card ─────────────────────────────────────── */}
+          <Animated.View
+            style={[
+              styles.glassCard,
+              {
+                opacity: cardAnim,
+                transform: [
+                  { scale: cardScale },
+                  { translateY: cardAnim.interpolate({ inputRange: [0, 1], outputRange: [40, 0] }) },
+                ],
+              },
+            ]}
+          >
+            {/* Inner glass shimmer border */}
+            <View style={styles.glassCardInner}>
+
+              {/* Tab switcher */}
+              <View style={styles.tabRow}>
+                {(['student', 'staff'] as const).map((tab) => (
+                  <Pressable
+                    key={tab}
+                    style={[styles.tabPill, activeTab === tab && styles.tabPillActive]}
+                    onPress={() => { setActiveTab(tab); setErrorMsg(''); }}
+                  >
+                    <Ionicons
+                      name={tab === 'student' ? 'person' : 'shield-checkmark'}
+                      size={13}
+                      color={activeTab === tab ? '#FFFFFF' : 'rgba(255,255,255,0.4)'}
+                    />
+                    <Text style={[styles.tabPillText, activeTab === tab && styles.tabPillTextActive]}>
+                      {tab === 'student' ? 'Student' : 'Staff & Admin'}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              {/* Title */}
+              <Text style={styles.cardTitle}>
+                {activeTab === 'student' ? 'Welcome Back' : 'Admin Access'}
+              </Text>
+              <Text style={styles.cardSubtitle}>
+                {activeTab === 'student'
+                  ? 'Sign in to access your campus dashboard'
+                  : 'Authorized credentials only — issued by your institution'}
+              </Text>
+
+              {/* Error message */}
+              {!!errorMsg && (
+                <View style={styles.errorBanner}>
+                  <Text style={styles.errorBannerText}>{errorMsg}</Text>
+                </View>
+              )}
+
+              {/* Google button */}
+              <Pressable
+                style={({ pressed }) => [styles.googleBtn, pressed && { opacity: 0.8 }]}
+                onPress={handleGoogle}
+                disabled={submitting || googleLoading}
+              >
+                {googleLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <View style={styles.googleIconBox}>
+                      <Ionicons name="logo-google" size={16} color="#EA4335" />
+                    </View>
+                    <Text style={styles.googleBtnText}>
+                      {activeTab === 'student' ? 'Continue with Google' : 'Sign in with Google Workspace'}
+                    </Text>
+                  </>
+                )}
+              </Pressable>
+
+              {/* Divider */}
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerLabel}>or sign in with credentials</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              {/* Email input */}
+              <GlassInput
+                icon={activeTab === 'student' ? 'mail-outline' : 'person-outline'}
+                placeholder={activeTab === 'student' ? 'Email or Registration ID' : 'Username, ID, or Email'}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType={activeTab === 'student' ? 'email-address' : 'default'}
+              />
+
+              {/* Password input */}
+              <View style={styles.passwordRow}>
+                <GlassInput
+                  icon="lock-closed-outline"
+                  placeholder="Password"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                />
+              </View>
+
+              {/* Sign in button */}
+              <Pressable
+                style={({ pressed }) => [styles.signInBtn, (submitting || pressed) && { opacity: 0.85 }]}
+                onPress={handleLogin}
+                disabled={submitting || googleLoading}
+              >
+                {submitting ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <>
+                    <Text style={styles.signInBtnText}>
+                      {activeTab === 'student' ? 'Enter Campus' : 'Authenticate'}
+                    </Text>
+                    <Ionicons name="arrow-forward" size={16} color="#fff" style={{ marginLeft: 8 }} />
+                  </>
+                )}
+              </Pressable>
+
+              {/* Info for students — no self-signup */}
+              {activeTab === 'student' && (
+                <View style={styles.infoBox}>
+                  <Ionicons name="information-circle" size={16} color="#C4AAFF" />
+                  <Text style={styles.infoText}>
+                    New students are registered by your College Admin or Faculty. Contact your institution to get access.
+                  </Text>
+                </View>
+              )}
+
+              {activeTab === 'staff' && (
+                <View style={[styles.infoBox, { borderColor: 'rgba(100,220,200,0.25)' }]}>
+                  <Ionicons name="shield-half" size={16} color="#64DCC8" />
+                  <Text style={[styles.infoText, { color: '#64DCC8' }]}>
+                    Staff credentials are provisioned exclusively by the Super Admin.
+                  </Text>
+                </View>
+              )}
+            </View>
+          </Animated.View>
+
+          {/* Bottom version watermark */}
+          <Animated.Text style={[styles.versionText, { opacity: cardAnim }]}>
+            Campus Connect v1.0 · Secured by Firebase
+          </Animated.Text>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
-    backgroundColor: CampusTheme.colors.background,
+    backgroundColor: '#0A0010',
   },
-  scrollContainer: {
-    padding: 20,
-    paddingTop: 50,
-    paddingBottom: 60,
+  orb: {
+    position: 'absolute',
+    // blur effect via boxShadow on web, shadow on native
+    ...Platform.select({
+      web: {
+        filter: 'blur(72px)',
+      },
+      default: {
+        shadowColor: '#C84BFF',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.6,
+        shadowRadius: 70,
+      },
+    }),
+  },
+  backdropOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(6,0,16,0.45)',
+  },
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 60,
   },
-  card: {
-    width: '100%',
-    maxWidth: 480,
-    backgroundColor: CampusTheme.colors.card,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: CampusTheme.colors.cardBorder,
-    padding: 24,
-    ...CampusTheme.shadows.card,
-  },
-  logoRow: {
+  brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
-    marginBottom: 24,
+    marginBottom: 28,
+    alignSelf: 'center',
   },
-  iconBox: {
+  brandIconRing: {
     width: 52,
     height: 52,
-    borderRadius: 16,
-    backgroundColor: CampusTheme.colors.pillInactiveBg,
+    borderRadius: 17,
+    backgroundColor: 'rgba(196,170,255,0.12)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(196,170,255,0.35)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: CampusTheme.colors.cardBorder,
+    ...Platform.select({
+      web: { boxShadow: '0 0 20px rgba(196,170,255,0.3)' },
+      default: {
+        shadowColor: '#C4AAFF',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.4,
+        shadowRadius: 12,
+      },
+    }),
   },
-  brandTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: CampusTheme.colors.text,
-    letterSpacing: 1.2,
+  brandName: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    letterSpacing: 2,
   },
   brandTagline: {
-    fontSize: 13,
-    color: CampusTheme.colors.primary,
+    fontSize: 12,
     fontWeight: '500',
-    marginTop: 2,
+    color: 'rgba(196,170,255,0.7)',
+    marginTop: 1,
+    letterSpacing: 0.5,
   },
-  tabContainer: {
-    flexDirection: 'row',
-    backgroundColor: CampusTheme.colors.pillInactiveBg,
-    borderRadius: 14,
-    padding: 4,
-    marginBottom: 22,
+  // ── Glass Card
+  glassCard: {
+    width: '100%',
+    maxWidth: 440,
+    borderRadius: 28,
+    overflow: 'hidden',
+    ...Platform.select({
+      web: {
+        backdropFilter: 'blur(40px)',
+        WebkitBackdropFilter: 'blur(40px)',
+        boxShadow: '0 24px 80px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.12)',
+      },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 16 },
+        shadowOpacity: 0.5,
+        shadowRadius: 40,
+        elevation: 20,
+      },
+    }),
+  },
+  glassCardInner: {
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderRadius: 28,
     borderWidth: 1,
-    borderColor: CampusTheme.colors.cardBorder,
+    borderColor: 'rgba(255,255,255,0.14)',
+    padding: 28,
   },
-  tabButton: {
+  // ── Tabs
+  tabRow: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    padding: 4,
+    marginBottom: 24,
+    gap: 4,
+  },
+  tabPill: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 10,
-    borderRadius: 10,
+    paddingVertical: 9,
+    borderRadius: 11,
   },
-  activeTabButton: {
-    backgroundColor: CampusTheme.colors.primary,
+  tabPillActive: {
+    backgroundColor: 'rgba(196,170,255,0.22)',
+    borderWidth: 1,
+    borderColor: 'rgba(196,170,255,0.45)',
+    ...Platform.select({
+      web: { boxShadow: '0 0 16px rgba(196,170,255,0.25)' },
+      default: {
+        shadowColor: '#C4AAFF',
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 0 },
+      },
+    }),
   },
-  tabText: {
+  tabPillText: {
     fontSize: 13,
     fontWeight: '600',
-    color: CampusTheme.colors.textMuted,
+    color: 'rgba(255,255,255,0.4)',
   },
-  activeTabText: {
-    color: CampusTheme.colors.pillActiveText,
+  tabPillTextActive: {
+    color: '#FFFFFF',
     fontWeight: '700',
   },
-  formTitle: {
-    fontSize: 22,
+  // ── Card text
+  cardTitle: {
+    fontSize: 26,
     fontWeight: '800',
-    color: CampusTheme.colors.text,
-    marginBottom: 4,
+    color: '#FFFFFF',
+    marginBottom: 6,
+    letterSpacing: -0.3,
   },
-  formSubtitle: {
+  cardSubtitle: {
     fontSize: 13,
-    color: CampusTheme.colors.textMuted,
-    marginBottom: 20,
+    color: 'rgba(255,255,255,0.45)',
+    marginBottom: 22,
     lineHeight: 18,
   },
-  errorBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: CampusTheme.colors.dangerBg,
+  // ── Error
+  errorBanner: {
+    backgroundColor: 'rgba(255,80,80,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,80,80,0.35)',
     borderRadius: 12,
-    padding: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(248, 113, 113, 0.3)',
+    ...Platform.select({ web: { backdropFilter: 'blur(8px)' }, default: {} }),
   },
-  errorText: {
-    color: CampusTheme.colors.danger,
+  errorBannerText: {
+    color: '#FF8080',
     fontSize: 13,
-    flex: 1,
+    lineHeight: 18,
+    fontWeight: '500',
   },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  inputLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: CampusTheme.colors.textMuted,
-    marginBottom: 6,
-  },
-  input: {
-    backgroundColor: '#0F1A14',
-    borderWidth: 1,
-    borderColor: CampusTheme.colors.cardBorder,
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 13,
-    color: CampusTheme.colors.text,
-    fontSize: 15,
-  },
-  collegeSelector: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  collegePill: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-    backgroundColor: CampusTheme.colors.pillInactiveBg,
-    borderWidth: 1,
-    borderColor: CampusTheme.colors.cardBorder,
-  },
-  activeCollegePill: {
-    backgroundColor: CampusTheme.colors.primaryDim,
-    borderColor: CampusTheme.colors.primary,
-  },
-  collegePillText: {
-    fontSize: 12,
-    color: CampusTheme.colors.textMuted,
-    fontWeight: '600',
-  },
-  activeCollegePillText: {
-    color: CampusTheme.colors.primary,
-    fontWeight: '700',
-  },
-  deviceHintText: {
-    fontSize: 12,
-    color: CampusTheme.colors.textMint,
-    textAlign: 'center',
-    marginBottom: 10,
-    opacity: 0.85,
-  },
-  submitButton: {
-    backgroundColor: CampusTheme.colors.primary,
-    borderRadius: 14,
-    paddingVertical: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 8,
-    marginBottom: 16,
-    ...CampusTheme.shadows.glow,
-  },
-  submitButtonText: {
-    color: CampusTheme.colors.background,
-    fontSize: 15,
-    fontWeight: '800',
-    letterSpacing: 0.3,
-  },
-  switchAuthMode: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  switchAuthText: {
-    color: CampusTheme.colors.primary,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  staffNoticeBox: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    marginTop: 18,
-    padding: 14,
-    borderRadius: 12,
-    backgroundColor: '#0F1E17',
-    borderWidth: 1,
-    borderColor: 'rgba(142, 228, 175, 0.15)',
-  },
-  staffNoticeIcon: {
-    marginTop: 2,
-  },
-  staffNoticeTitle: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: CampusTheme.colors.primary,
-    marginBottom: 2,
-  },
-  staffNoticeText: {
-    fontSize: 11,
-    color: CampusTheme.colors.textMuted,
-    lineHeight: 16,
-  },
-  googleButton: {
+  // ── Google button
+  googleBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
+    backgroundColor: 'rgba(255,255,255,0.09)',
     borderWidth: 1,
-    borderRadius: 14,
+    borderColor: 'rgba(255,255,255,0.18)',
+    borderRadius: 16,
     paddingVertical: 14,
-    paddingHorizontal: 16,
-    marginTop: 8,
-    marginBottom: 16,
-    ...CampusTheme.shadows.card,
+    paddingHorizontal: 20,
+    marginBottom: 20,
+    ...Platform.select({
+      web: {
+        backdropFilter: 'blur(10px)',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12)',
+      },
+      default: {},
+    }),
   },
-  googleButtonText: {
+  googleIconBox: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  googleBtnText: {
+    color: 'rgba(255,255,255,0.88)',
     fontSize: 14,
     fontWeight: '700',
     letterSpacing: 0.2,
   },
-  dividerRow: {
+  // ── Divider
+  divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 18,
     gap: 10,
+    marginBottom: 20,
   },
   dividerLine: {
     flex: 1,
     height: 1,
+    backgroundColor: 'rgba(255,255,255,0.1)',
   },
-  dividerText: {
+  dividerLabel: {
     fontSize: 11,
+    color: 'rgba(255,255,255,0.3)',
     fontWeight: '600',
+    letterSpacing: 0.5,
     textTransform: 'uppercase',
+  },
+  // ── Glass Input
+  glassInputWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: Platform.OS === 'ios' ? 14 : 0,
+    minHeight: 52,
+    marginBottom: 14,
+    ...Platform.select({
+      web: { backdropFilter: 'blur(10px)' },
+      default: {},
+    }),
+  },
+  inputIcon: {
+    marginRight: 10,
+  },
+  glassInput: {
+    flex: 1,
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '500',
+    paddingVertical: Platform.OS === 'android' ? 12 : 0,
+  },
+  passwordRow: {
+    marginBottom: 4,
+  },
+  // ── Sign in button
+  signInBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 16,
+    paddingVertical: 16,
+    marginTop: 6,
+    marginBottom: 18,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    overflow: 'hidden',
+    ...Platform.select({
+      web: {
+        background: 'linear-gradient(135deg, #9B5CFF 0%, #FF4BA6 100%)',
+        boxShadow: '0 8px 32px rgba(155,92,255,0.45)',
+      },
+      default: {
+        backgroundColor: '#9B5CFF',
+        shadowColor: '#9B5CFF',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.5,
+        shadowRadius: 20,
+        elevation: 10,
+      },
+    }),
+  },
+  signInBtnText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: 0.4,
+  },
+  // ── Info box
+  infoBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    backgroundColor: 'rgba(196,170,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(196,170,255,0.2)',
+    borderRadius: 12,
+    padding: 12,
+  },
+  infoText: {
+    flex: 1,
+    fontSize: 12,
+    color: 'rgba(196,170,255,0.75)',
+    lineHeight: 17,
+    fontWeight: '500',
+  },
+  // ── Version watermark
+  versionText: {
+    marginTop: 24,
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.2)',
+    textAlign: 'center',
     letterSpacing: 0.5,
   },
 });

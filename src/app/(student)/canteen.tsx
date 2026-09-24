@@ -284,7 +284,7 @@ export default function CanteenScreen() {
   };
 
   return (
-    <View style={[styles.safeContainer, { backgroundColor: colors.background }]}>
+    <View style={[styles.safeContainer, { backgroundColor: '#0A0010' }]}>
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.contentContainer}
@@ -414,8 +414,8 @@ export default function CanteenScreen() {
                 key={cat}
                 style={[
                   styles.categoryPill,
-                  { backgroundColor: colors.card, borderColor: colors.cardBorder },
-                  isActive && { backgroundColor: colors.primary, borderColor: colors.primary },
+                  { backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(196,170,255,0.12)' },
+                  isActive && { backgroundColor: '#9B5CFF', borderColor: '#9B5CFF' },
                 ]}
                 onPress={() => setActiveCategory(cat)}
               >
@@ -440,51 +440,51 @@ export default function CanteenScreen() {
             return (
               <View
                 key={item.id}
-                style={[styles.foodCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
+                style={[styles.foodCard, { backgroundColor: 'rgba(255,255,255,0.055)', borderColor: 'rgba(196,170,255,0.13)' }]}
               >
-                <View style={[styles.foodIconBox, { backgroundColor: colors.primaryDim }]}>
+                <View style={[styles.foodIconBox, { backgroundColor: 'rgba(196,170,255,0.1)' }]}>
                   <Ionicons
                     name={getItemIcon(item.category, item.name)}
                     size={28}
-                    color={colors.primary}
+                    color="#C4AAFF"
                   />
                 </View>
 
                 <View style={styles.foodInfo}>
-                  <View style={[styles.prepBadge, { backgroundColor: colors.primaryDim }]}>
-                    <Text style={[styles.prepBadgeText, { color: colors.primary }]}>{item.prepTimeMinutes} min</Text>
+                  <View style={[styles.prepBadge, { backgroundColor: 'rgba(196,170,255,0.12)' }]}>
+                    <Text style={[styles.prepBadgeText, { color: '#C4AAFF' }]}>{item.prepTimeMinutes} min</Text>
                   </View>
 
-                  <Text style={[styles.foodName, { color: colors.text }]}>{item.name}</Text>
-                  <Text style={[styles.foodDesc, { color: colors.textMuted }]} numberOfLines={2}>
+                  <Text style={[styles.foodName, { color: '#FFFFFF' }]}>{item.name}</Text>
+                  <Text style={[styles.foodDesc, { color: 'rgba(255,255,255,0.4)' }]} numberOfLines={2}>
                     {item.description}
                   </Text>
 
                   <View style={styles.foodBottomRow}>
-                    <Text style={[styles.foodPrice, { color: colors.text }]}>₹{item.price}</Text>
+                    <Text style={[styles.foodPrice, { color: '#FFFFFF' }]}>₹{item.price}</Text>
 
                     {qtyInCart > 0 ? (
-                      <View style={[styles.stepperBox, { backgroundColor: colors.primary }]}>
+                      <View style={[styles.stepperBox, { backgroundColor: '#9B5CFF' }]}>
                         <Pressable
                           style={styles.stepperBtn}
                           onPress={() => removeFromCart(item.id)}
                         >
-                          <Ionicons name="remove" size={14} color={isDark ? '#0B110E' : '#FFFFFF'} />
+                          <Ionicons name="remove" size={14} color="#FFFFFF" />
                         </Pressable>
-                        <Text style={[styles.stepperQty, { color: isDark ? '#0B110E' : '#FFFFFF' }]}>{qtyInCart}</Text>
+                        <Text style={[styles.stepperQty, { color: '#FFFFFF' }]}>{qtyInCart}</Text>
                         <Pressable
                           style={styles.stepperBtn}
                           onPress={() => addToCart(item.id)}
                         >
-                          <Ionicons name="add" size={14} color={isDark ? '#0B110E' : '#FFFFFF'} />
+                          <Ionicons name="add" size={14} color="#FFFFFF" />
                         </Pressable>
                       </View>
                     ) : (
                       <Pressable
-                        style={[styles.addBtn, { backgroundColor: colors.primary }]}
+                        style={[styles.addBtn, { backgroundColor: '#9B5CFF' }]}
                         onPress={() => addToCart(item.id)}
                       >
-                        <Text style={[styles.addBtnText, { color: isDark ? '#0B110E' : '#FFFFFF' }]}>+ Add</Text>
+                        <Text style={[styles.addBtnText, { color: '#FFFFFF' }]}>+ Add</Text>
                       </Pressable>
                     )}
                   </View>
@@ -1013,8 +1013,7 @@ export default function CanteenScreen() {
 const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
-    backgroundColor: CampusTheme.colors.background,
-    ...(Platform.OS === 'web' ? { minHeight: '100vh' as any } : {}),
+    backgroundColor: '#0A0010',
   },
   container: {
     flex: 1,
@@ -1042,11 +1041,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: CampusTheme.colors.primary,
+    backgroundColor: '#9B5CFF',
     paddingHorizontal: 11,
     paddingVertical: 7,
     borderRadius: 10,
-    ...CampusTheme.shadows.glow,
   },
   headerCartBtnText: {
     color: '#0D1411',
