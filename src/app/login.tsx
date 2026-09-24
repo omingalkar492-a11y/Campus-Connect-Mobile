@@ -19,7 +19,7 @@ import { SEED_COLLEGES } from '@/services/seed-data';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { login, signup, loading: authLoading } = useAuth();
+  const { login, loginWithGoogle, signup, loading: authLoading } = useAuth();
   const { colors, isDark } = useAppTheme();
 
   const [activeTab, setActiveTab] = useState<'student' | 'staff'>('student');
@@ -30,6 +30,7 @@ export default function LoginScreen() {
   const [name, setName] = useState('');
   const [selectedCollegeId, setSelectedCollegeId] = useState(SEED_COLLEGES[0].id);
   const [submitting, setSubmitting] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   const getFriendlyAuthError = (err: any): string => {
@@ -52,11 +53,34 @@ export default function LoginScreen() {
     ) {
       return 'Incorrect ID/Email or password. Please verify your credentials.';
     }
+    if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+      return '';
+    }
+    if (code === 'auth/popup-blocked') {
+      return 'Popup was blocked by your browser. Please allow popups for this site to sign in with Google.';
+    }
+    if (code === 'auth/account-exists-with-different-credential') {
+      return 'An account already exists with this email address. Please sign in with email and password.';
+    }
     if (code === 'auth/network-request-failed') {
       return 'Network request failed. Please check your internet connection.';
     }
     return msg.replace(/^Firebase:\s*/i, '').replace(/\(auth\/[^)]+\)\.?/g, '').trim() ||
       'Authentication failed. Please check your information.';
+  };
+
+  const handleGoogleAuth = async () => {
+    setErrorMsg('');
+    try {
+      setGoogleLoading(true);
+      await loginWithGoogle();
+      router.replace('/' as any);
+    } catch (err: any) {
+      const msg = getFriendlyAuthError(err);
+      if (msg) setErrorMsg(msg);
+    } finally {
+      setGoogleLoading(false);
+    }
   };
 
   const handleAuth = async () => {
@@ -201,6 +225,49 @@ export default function LoginScreen() {
           </View>
         ) : null}
 
+        {/* Google OAuth Button */}
+        <Pressable
+          style={[
+            styles.googleButton,
+            {
+              backgroundColor: isDark ? '#1F1F1F' : '#FFFFFF',
+              borderColor: isDark ? '#444746' : '#DADCE0',
+            },
+            googleLoading && { opacity: 0.7 },
+          ]}
+          onPress={handleGoogleAuth}
+          disabled={submitting || googleLoading}
+        >
+          {googleLoading ? (
+            <ActivityIndicator size="small" color={CampusTheme.colors.primary} />
+          ) : (
+            <>
+              <Ionicons name="logo-google" size={18} color="#EA4335" />
+              <Text
+                style={[
+                  styles.googleButtonText,
+                  { color: isDark ? '#E3E3E3' : '#3C4043' },
+                ]}
+              >
+                {activeTab === 'student'
+                  ? isSignup
+                    ? 'Sign up with Google'
+                    : 'Continue with Google'
+                  : 'Sign in with Google Workspace'}
+              </Text>
+            </>
+          )}
+        </Pressable>
+
+        {/* Divider */}
+        <View style={styles.dividerRow}>
+          <View style={[styles.dividerLine, { backgroundColor: colors.cardBorder }]} />
+          <Text style={[styles.dividerText, { color: CampusTheme.colors.textMuted }]}>
+            {activeTab === 'student' ? 'or continue with direct email' : 'or enter institutional credentials'}
+          </Text>
+          <View style={[styles.dividerLine, { backgroundColor: colors.cardBorder }]} />
+        </View>
+
         {/* Form Inputs */}
         {isSignup && activeTab === 'student' && (
           <View style={styles.inputGroup}>
@@ -260,8 +327,8 @@ export default function LoginScreen() {
           <Text style={styles.inputLabel}>
             {activeTab === 'student'
               ? isSignup
-                ? 'Campus Email Address'
-                : 'Campus Email or Registration ID / PRN'
+                ? 'Email Address'
+                : 'Direct Email or Registration ID'
               : 'Institutional ID, Username, or Email'}
           </Text>
           <TextInput
@@ -269,8 +336,8 @@ export default function LoginScreen() {
             placeholder={
               activeTab === 'student'
                 ? isSignup
-                  ? 'e.g. student@jspm.edu'
-                  : 'e.g. 2024CS001 or student@jspm.edu'
+                  ? 'e.g. name@gmail.com or student@jspm.edu'
+                  : 'e.g. student@gmail.com or 2024CS001'
                 : 'omkumar_01, admin_jspm, or email'
             }
             placeholderTextColor={CampusTheme.colors.textDim}
@@ -562,5 +629,39 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: CampusTheme.colors.textMuted,
     lineHeight: 16,
+  },
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 16,
+    ...CampusTheme.shadows.card,
+  },
+  googleButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 18,
+    gap: 10,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 });

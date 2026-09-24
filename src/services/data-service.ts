@@ -445,7 +445,7 @@ export const removeCloudIdentity = async (
   }
 })();
 
-const withTimeout = <T>(promise: Promise<T>, timeoutMs = 1500): Promise<T> => {
+const withTimeout = <T>(promise: Promise<T>, timeoutMs = 5000): Promise<T> => {
   return Promise.race([
     promise,
     new Promise<T>((_, reject) =>

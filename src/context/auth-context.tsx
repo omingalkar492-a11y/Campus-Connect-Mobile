@@ -5,6 +5,8 @@ import {
   signOut,
   onAuthStateChanged,
   updateProfile,
+  GoogleAuthProvider,
+  signInWithPopup,
   User as FirebaseUser,
 } from 'firebase/auth';
 import React, { createContext, useContext, useState, useEffect } from 'react';
@@ -28,6 +30,7 @@ interface AuthContextType {
   role: UserRole | null;
   loading: boolean;
   login: (emailOrUsername: string, pass: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   signup: (
     email: string,
     pass: string,
@@ -127,7 +130,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error('Please enter both identifier (email/registration ID) and password.');
       }
 
-      // 1. Check institutional fast-path & cloud-stored staff/canteen credentials
+      // 1. Direct Email Sign-In Fast-Path: if input has '@', authenticate directly with Firebase Auth
+      if (cleanId.includes('@')) {
+        try {
+          const res = await signInWithEmailAndPassword(auth, cleanId, cleanPass);
+          setUser(res.user);
+          let p = await DataService.getUserProfile(res.user.uid, res.user.email || cleanId);
+          if (!p) {
+            p = parseProfileFromUser(res.user, cleanId);
+            await DataService.saveUserProfile(p);
+          }
+          if (p) {
+            await syncProfileAndCollege(p);
+          }
+          return;
+        } catch (directErr: any) {
+          // If error is wrong password or user not found, also check institutional credentials
+          // before failing (in case of hardcoded demo/seed staff profiles)
+          if (
+            directErr?.code !== 'auth/user-not-found' &&
+            directErr?.code !== 'auth/invalid-credential' &&
+            directErr?.code !== 'auth/wrong-password'
+          ) {
+            throw directErr;
+          }
+        }
+      }
+
+      // 2. Check institutional fast-path & cloud-stored staff/canteen credentials
       const institutionalProfile = await DataService.authenticateCredentials(cleanId, cleanPass);
       if (institutionalProfile) {
         try {
@@ -140,12 +170,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // 2. Authenticate student or general user via Firebase Auth
-      // Build candidate emails (if user typed Registration ID, username, or phone, test all aliases)
+      // 3. Authenticate non-email identifier (Registration ID, username, or phone) via candidate aliases
       const candidateEmails: string[] = [];
-      if (cleanId.includes('@')) {
-        candidateEmails.push(cleanId);
-      } else {
+      if (!cleanId.includes('@')) {
         candidateEmails.push(toCanonicalAlias(cleanId));
         candidateEmails.push(`${cleanId.replace(/[^a-z0-9._-]/g, '')}@canteen.campus`);
         const digits = cleanId.replace(/\D/g, '');
@@ -176,6 +203,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (lastError) {
         throw lastError;
+      }
+      throw new Error('Authentication failed. Please verify your credentials.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loginWithGoogle = async () => {
+    setLoading(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+
+      let res;
+      if (Platform.OS === 'web') {
+        res = await signInWithPopup(auth, provider);
+      } else {
+        try {
+          res = await signInWithPopup(auth, provider);
+        } catch (popupErr: any) {
+          if (popupErr?.code === 'auth/operation-not-supported-in-this-environment') {
+            throw new Error(
+              'Google Sign-In on mobile devices requires a Web Browser or configured OAuth client. Please use your direct email and password to log in.'
+            );
+          }
+          throw popupErr;
+        }
+      }
+
+      if (res && res.user) {
+        setUser(res.user);
+        let p = await DataService.getUserProfile(res.user.uid, res.user.email || undefined);
+        if (!p) {
+          p = {
+            uid: res.user.uid,
+            name:
+              res.user.displayName ||
+              (res.user.email ? res.user.email.split('@')[0] : 'Campus Student'),
+            email: res.user.email || '',
+            role: 'student',
+            collegeId: SEED_COLLEGES[0].id,
+            status: 'active',
+            photoURL: res.user.photoURL || undefined,
+            createdAt: new Date().toISOString(),
+          };
+          await DataService.saveUserProfile(p);
+        }
+        await syncProfileAndCollege(p);
       }
     } finally {
       setLoading(false);
@@ -298,6 +373,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         role: profile?.role || null,
         loading,
         login,
+        loginWithGoogle,
         signup,
         logout,
         switchDemoRole,
